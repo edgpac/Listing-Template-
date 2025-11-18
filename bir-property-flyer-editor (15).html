@@ -1,0 +1,1476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIR Property Flyer Editor</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f0f0f0;
+        }
+
+        .flyer-container {
+            background: white;
+            width: 8.5in;
+            min-height: 11in;
+            margin: 20px auto;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            position: relative;
+        }
+
+        .header-note {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px 20px;
+            font-size: 9px;
+            text-align: center;
+        }
+
+        .hero-image-section {
+            position: relative;
+            height: 500px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+        }
+
+        .hero-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo {
+            position: absolute;
+            bottom: -75px;
+            left: 0;
+            background: white;
+            padding: 10px 18px;
+            border-radius: 0 0 12px 0;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .logo img {
+            height: 48px;
+        }
+
+        .price-section {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: rgba(30, 58, 138, 0.92);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 10px 0 0 0;
+            min-width: 240px;
+            z-index: 5;
+        }
+
+        .mls-address-section {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            background: rgba(30, 58, 138, 0.92);
+            color: white;
+            padding: 10px 18px;
+            border-radius: 0 10px 0 0;
+            max-width: 350px;
+            z-index: 5;
+        }
+
+        .content-section {
+            padding: 25px 30px 10px 30px;
+        }
+
+        .interior-image {
+            width: 100%;
+            height: 185px;
+            object-fit: cover;
+            object-position: center;
+            border-radius: 8px;
+        }
+
+        .amenities-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 12px 30px 8px 30px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 10px;
+            gap: 60px;
+        }
+
+        .amenity-item {
+            text-align: center;
+            color: #4b5563;
+        }
+
+        .amenity-icon {
+            font-size: 22px;
+            color: #1e3a8a;
+            margin-bottom: 3px;
+        }
+
+        .amenity-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3a8a;
+            margin-bottom: 1px;
+        }
+
+        .amenity-label {
+            font-size: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            color: #6b7280;
+        }
+
+        .footer-note {
+            background: #1e3a8a;
+            color: white;
+            padding: 10px 20px;
+            font-size: 9px;
+            text-align: center;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .edit-field {
+            border: 1px dashed #cbd5e1;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: transparent;
+            width: 100%;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .edit-field:focus {
+            border-color: #3b82f6;
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .edit-field-white {
+            color: white;
+        }
+
+        .edit-field-dark {
+            color: #1f2937;
+        }
+
+        .image-upload-btn {
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            display: block;
+            background: #f3f4f6;
+        }
+
+        .image-upload-btn img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .upload-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .image-upload-btn:hover .upload-overlay {
+            opacity: 1;
+        }
+
+        .logo-hover-overlay {
+            pointer-events: none;
+        }
+
+        div:hover .logo-hover-overlay {
+            opacity: 1 !important;
+            background: rgba(255,255,255,0.8) !important;
+        }
+
+        .controls-panel {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            z-index: 1000;
+            width: 200px;
+        }
+
+        .logo-upload-box:hover {
+            background: #f9fafb !important;
+            border-color: #3b82f6 !important;
+        }
+
+        .btn {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            width: 100%;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #059669;
+        }
+
+        @media print {
+            .controls-panel {
+                display: none;
+            }
+            .flyer-container {
+                box-shadow: none;
+                margin: 0;
+            }
+            .edit-field {
+                border: none;
+            }
+            .remove-icon-btn {
+                display: none !important;
+            }
+            .upload-overlay {
+                display: none !important;
+            }
+        }
+
+        .clean-view .edit-field {
+            border: none !important;
+            background: transparent !important;
+            pointer-events: none;
+        }
+
+        .clean-view .remove-icon-btn {
+            display: none !important;
+        }
+
+        .clean-view .upload-overlay {
+            display: none !important;
+        }
+
+        .clean-view input,
+        .clean-view textarea {
+            overflow: visible !important;
+            text-overflow: clip !important;
+        }
+
+        .clean-view .character-counter {
+            display: none !important;
+        }
+
+        .export-options {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .export-btn {
+            width: 100%;
+            margin-bottom: 6px;
+            font-size: 12px;
+            padding: 6px 10px;
+        }
+
+        .unit-overview-section {
+            background: #f9fafb;
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .unit-overview-section textarea {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        textarea.edit-field {
+            resize: vertical;
+            min-height: 80px;
+            font-family: 'Montserrat', sans-serif;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .features-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .feature-icon-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .feature-icon-item {
+            position: relative;
+            background: #f3f4f6;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .feature-icon-item:hover {
+            background: #e5e7eb;
+            border-color: #3b82f6;
+        }
+
+        .feature-icon-item.add-icon {
+            background: #eff6ff;
+            border: 2px dashed #3b82f6;
+            color: #3b82f6;
+        }
+
+        .feature-icon-item.add-icon:hover {
+            background: #dbeafe;
+        }
+
+        .feature-icon-display {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .feature-icon-label {
+            font-size: 9px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .remove-icon-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: #3b82f6;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.2s;
+        }
+
+        .remove-icon-btn:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+
+        .amenity-item .remove-icon-btn {
+            background: #3b82f6;
+        }
+
+        .amenity-item .remove-icon-btn:hover {
+            background: #2563eb;
+        }
+
+        .feature-icon-item .remove-icon-btn {
+            background: #ef4444;
+        }
+
+        .feature-icon-item .remove-icon-btn:hover {
+            background: #dc2626;
+        }
+
+        .icon-selector-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .icon-selector-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .icon-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 5px;
+        }
+
+        .icon-option:hover {
+            background: #f3f4f6;
+        }
+
+        .icon-option i {
+            font-size: 24px;
+            margin-right: 15px;
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function PropertyFlyerEditor() {
+            const [propertyData, setPropertyData] = useState({
+                mls: '24-2325',
+                address: '605B, BAHIA DEL TEZAL',
+                priceUSD: '289,000',
+                priceMXN: '5,780,000',
+                size: '986.69',
+                yearBuilt: '2017',
+                overview: 'This unit completely updated with new kitchen and updated furniture. Great ocean views from the patio.',
+                location: 'Cabo Corridor',
+                bedrooms: '2',
+                fullBaths: '2',
+                halfBaths: '0',
+                garageSpaces: '2',
+                swimmingPools: '1',
+                heroImage: null,
+                logo: 'https://res.cloudinary.com/dhwnr1pa5/image/upload/v1762021536/Screenshot_2025-10-31_at_5.21.25_PM-removebg-preview_2_gndt9y.png',
+                logoHeight: 38,
+                logoWidth: 110,
+                image1: null,
+                image2: null,
+                image3: null,
+                image4: null
+            });
+
+            const [customFeatures, setCustomFeatures] = useState([]);
+            const [showIconSelector, setShowIconSelector] = useState(false);
+            const [editingFeatureIndex, setEditingFeatureIndex] = useState(null);
+
+            const [amenityIcons, setAmenityIcons] = useState([
+                { id: 'bedrooms', icon: 'fa-bed', label: 'Bedrooms', value: '2' },
+                { id: 'fullBaths', icon: 'fa-bath', label: 'Full Baths', value: '2' },
+                { id: 'halfBaths', icon: 'fa-toilet', label: '½ Bath', value: '0' },
+                { id: 'garageSpaces', icon: 'fa-car', label: 'Garage Space', value: '2' },
+                { id: 'swimmingPools', icon: 'fa-swimming-pool', label: 'Swimming Pool', value: '1' }
+            ]);
+            const [showAmenityIconSelector, setShowAmenityIconSelector] = useState(false);
+            const [editingAmenityIndex, setEditingAmenityIndex] = useState(null);
+            const [isCleanView, setIsCleanView] = useState(false);
+            const [isSaved, setIsSaved] = useState(true);
+            const [showSaveMessage, setShowSaveMessage] = useState(false);
+
+            const availableIcons = [
+                { icon: 'fa-wifi', label: 'WiFi' },
+                { icon: 'fa-snowflake', label: 'A/C' },
+                { icon: 'fa-fire', label: 'Heating' },
+                { icon: 'fa-utensils', label: 'Kitchen' },
+                { icon: 'fa-tv', label: 'TV' },
+                { icon: 'fa-dumbbell', label: 'Gym' },
+                { icon: 'fa-hot-tub', label: 'Hot Tub' },
+                { icon: 'fa-umbrella-beach', label: 'Beach Access' },
+                { icon: 'fa-door-open', label: 'Balcony' },
+                { icon: 'fa-paw', label: 'Pet Friendly' },
+                { icon: 'fa-wheelchair', label: 'Accessible' },
+                { icon: 'fa-shield-alt', label: 'Security' },
+                { icon: 'fa-elevator', label: 'Elevator' },
+                { icon: 'fa-wine-glass', label: 'Bar' },
+                { icon: 'fa-coffee', label: 'Coffee Maker' },
+                { icon: 'fa-blender', label: 'Blender' },
+                { icon: 'fa-couch', label: 'Furnished' },
+                { icon: 'fa-sun', label: 'Solar' },
+                { icon: 'fa-water', label: 'Ocean View' },
+                { icon: 'fa-mountain', label: 'Mountain View' },
+                { icon: 'fa-bed', label: 'Bedrooms' },
+                { icon: 'fa-bath', label: 'Full Baths' },
+                { icon: 'fa-toilet', label: 'Half Bath' },
+                { icon: 'fa-car', label: 'Garage' },
+                { icon: 'fa-swimming-pool', label: 'Pool' },
+                { icon: 'fa-tree', label: 'Garden' },
+                { icon: 'fa-home', label: 'Property' },
+                { icon: 'fa-key', label: 'Keys' },
+                { icon: 'fa-lock', label: 'Secure' },
+                { icon: 'fa-chess-board', label: 'Game Room' }
+            ];
+
+            const heroImageRef = useRef(null);
+            const logoRef = useRef(null);
+            const image1Ref = useRef(null);
+            const image2Ref = useRef(null);
+            const image3Ref = useRef(null);
+            const image4Ref = useRef(null);
+
+            const handleInputChange = (field, value) => {
+                setPropertyData(prev => ({
+                    ...prev,
+                    [field]: value
+                }));
+                setIsSaved(false);
+            };
+
+            const handleImageUpload = (field, event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    // Validate file type
+                    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+                    if (!validTypes.includes(file.type)) {
+                        alert('Please select a valid image file (JPG, PNG, or WebP)');
+                        return;
+                    }
+                    
+                    // Check file size (max 10MB)
+                    const maxSize = 10 * 1024 * 1024;
+                    if (file.size > maxSize) {
+                        alert('File size too large. Please use images smaller than 10MB.');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        setPropertyData(prev => ({
+                            ...prev,
+                            [field]: e.target.result
+                        }));
+                    };
+                    reader.onerror = () => {
+                        alert('Failed to read file. Please try again.');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+
+            const triggerFileInput = (ref) => {
+                if (ref && ref.current) {
+                    ref.current.click();
+                }
+            };
+
+            const addCustomFeature = (iconData) => {
+                if (customFeatures.length < 10) {
+                    setCustomFeatures([...customFeatures, iconData]);
+                }
+                setShowIconSelector(false);
+            };
+
+            const removeCustomFeature = (index) => {
+                setCustomFeatures(customFeatures.filter((_, i) => i !== index));
+            };
+
+            const openIconSelector = () => {
+                setShowIconSelector(true);
+            };
+
+            const openAmenityIconSelector = (index) => {
+                setEditingAmenityIndex(index);
+                setShowAmenityIconSelector(true);
+            };
+
+            const changeAmenityIcon = (iconData) => {
+                const newAmenityIcons = [...amenityIcons];
+                newAmenityIcons[editingAmenityIndex] = {
+                    ...newAmenityIcons[editingAmenityIndex],
+                    icon: iconData.icon,
+                    label: iconData.label
+                };
+                setAmenityIcons(newAmenityIcons);
+                setShowAmenityIconSelector(false);
+                setEditingAmenityIndex(null);
+            };
+
+            const updateAmenityValue = (index, value) => {
+                const newAmenityIcons = [...amenityIcons];
+                newAmenityIcons[index].value = value;
+                setAmenityIcons(newAmenityIcons);
+            };
+
+            const handlePrint = () => {
+                window.print();
+            };
+
+            const handleDownloadPDF = () => {
+                window.print();
+            };
+
+            const handleReset = () => {
+                if (confirm('Are you sure you want to reset all fields?')) {
+                    setPropertyData({
+                        mls: '24-2325',
+                        address: '605B, BAHIA DEL TEZAL',
+                        priceUSD: '289,000',
+                        priceMXN: '5,780,000',
+                        size: '986.69',
+                        yearBuilt: '2017',
+                        overview: 'This unit completely updated with new kitchen and updated furniture. Great ocean views from the patio.',
+                        location: 'Cabo Corridor',
+                        bedrooms: '2',
+                        fullBaths: '2',
+                        halfBaths: '0',
+                        garageSpaces: '2',
+                        swimmingPools: '1',
+                        heroImage: null,
+                        logo: 'https://res.cloudinary.com/dhwnr1pa5/image/upload/v1762021536/Screenshot_2025-10-31_at_5.21.25_PM-removebg-preview_2_gndt9y.png',
+                        logoHeight: 38,
+                        logoWidth: 110,
+                        image1: null,
+                        image2: null,
+                        image3: null,
+                        image4: null
+                    });
+                    setIsSaved(true);
+                }
+            };
+
+            const handleSave = () => {
+                // Force a re-render to ensure all state is current
+                setPropertyData({...propertyData});
+                setIsSaved(true);
+                setShowSaveMessage(true);
+                
+                // Hide the save message after 2 seconds
+                setTimeout(() => {
+                    setShowSaveMessage(false);
+                }, 2000);
+            };
+
+            const toggleCleanView = () => {
+                setIsCleanView(!isCleanView);
+            };
+
+            const downloadAsImage = async () => {
+                // Enable clean view temporarily
+                setIsCleanView(true);
+                
+                // Wait for DOM to update and render
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        
+                        // Force a reflow to ensure all styles are applied
+                        flyer.offsetHeight;
+                        
+                        const canvas = await html2canvas(flyer, {
+                            scale: 2,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: '#ffffff',
+                            logging: false,
+                            windowWidth: flyer.scrollWidth,
+                            windowHeight: flyer.scrollHeight,
+                            scrollX: 0,
+                            scrollY: 0,
+                            onclone: (clonedDoc) => {
+                                // In the cloned document, convert all inputs to divs with text content
+                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
+                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
+                                inputs.forEach(input => {
+                                    const div = clonedDoc.createElement('div');
+                                    div.textContent = input.value;
+                                    div.style.cssText = window.getComputedStyle(input).cssText;
+                                    div.style.border = 'none';
+                                    div.style.background = 'transparent';
+                                    div.style.whiteSpace = 'pre-wrap';
+                                    div.style.wordWrap = 'break-word';
+                                    input.parentNode.replaceChild(div, input);
+                                });
+                            }
+                        });
+                        
+                        const link = document.createElement('a');
+                        link.download = 'property-flyer.png';
+                        link.href = canvas.toDataURL('image/png');
+                        link.click();
+                        
+                        setIsCleanView(false);
+                    } catch (error) {
+                        console.error('Export failed:', error);
+                        alert('Export failed. Please try Print to PDF instead.');
+                        setIsCleanView(false);
+                    }
+                }, 300);
+            };
+
+            const copyToClipboard = async () => {
+                setIsCleanView(true);
+                
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        const canvas = await html2canvas(flyer, {
+                            scale: 2,
+                            useCORS: true,
+                            backgroundColor: '#ffffff'
+                        });
+                        
+                        canvas.toBlob(async (blob) => {
+                            try {
+                                await navigator.clipboard.write([
+                                    new ClipboardItem({ 'image/png': blob })
+                                ]);
+                                alert('Flyer copied to clipboard!');
+                            } catch (err) {
+                                alert('Copy to clipboard not supported. Please use Download options.');
+                            }
+                            setIsCleanView(false);
+                        });
+                    } catch (error) {
+                        console.error('Copy failed:', error);
+                        alert('Copy failed. Please try another export method.');
+                        setIsCleanView(false);
+                    }
+                }, 100);
+            };
+
+            const openInNewWindow = () => {
+                setIsCleanView(true);
+                setTimeout(() => {
+                    window.open(window.location.href, '_blank');
+                    setIsCleanView(false);
+                }, 100);
+            };
+
+            return (
+                <>
+                    <div className="controls-panel">
+                        <h3 className="text-sm font-bold mb-3 text-gray-800">Controls</h3>
+                        
+                        {/* Logo Upload Section */}
+                        <div style={{marginBottom: '15px', padding: '12px', background: '#f9fafb', borderRadius: '8px', border: '2px dashed #d1d5db'}}>
+                            <p className="text-xs font-semibold text-gray-700 mb-2">Company Logo</p>
+                            <div 
+                                onClick={() => triggerFileInput(logoRef)}
+                                style={{
+                                    cursor: 'pointer',
+                                    padding: '15px',
+                                    background: 'white',
+                                    borderRadius: '6px',
+                                    border: '1px solid #e5e7eb',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    transition: 'all 0.2s'
+                                }}
+                                className="logo-upload-box"
+                            >
+                                {propertyData.logo ? (
+                                    <>
+                                        <img 
+                                            src={propertyData.logo} 
+                                            alt="Current Logo" 
+                                            style={{maxHeight: '50px', maxWidth: '120px', objectFit: 'contain'}}
+                                        />
+                                        <p className="text-xs text-gray-500">Click to change logo</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-upload text-2xl text-gray-400"></i>
+                                        <p className="text-xs text-gray-500">Click to upload logo</p>
+                                        <p className="text-xs text-gray-400">PNG, JPG, WebP</p>
+                                    </>
+                                )}
+                            </div>
+                            <input 
+                                type="file" 
+                                style={{display: 'none'}}
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                onChange={(e) => handleImageUpload('logo', e)}
+                                ref={logoRef}
+                            />
+                            
+                            {/* Logo Size Controls */}
+                            <div style={{marginTop: '12px'}}>
+                                <div style={{marginBottom: '8px'}}>
+                                    <label style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px'}}>
+                                        <span className="text-xs text-gray-600">Height: {propertyData.logoHeight}px</span>
+                                    </label>
+                                    <input 
+                                        type="range" 
+                                        min="15" 
+                                        max="200" 
+                                        value={propertyData.logoHeight}
+                                        onChange={(e) => handleInputChange('logoHeight', parseInt(e.target.value))}
+                                        style={{width: '100%', cursor: 'pointer'}}
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px'}}>
+                                        <span className="text-xs text-gray-600">Width: {propertyData.logoWidth}px</span>
+                                    </label>
+                                    <input 
+                                        type="range" 
+                                        min="40" 
+                                        max="440" 
+                                        value={propertyData.logoWidth}
+                                        onChange={(e) => handleInputChange('logoWidth', parseInt(e.target.value))}
+                                        style={{width: '100%', cursor: 'pointer'}}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {/* Save Button with status indicator */}
+                        <button 
+                            className="btn" 
+                            style={{
+                                background: isSaved ? '#10b981' : '#f59e0b', 
+                                color: 'white',
+                                position: 'relative'
+                            }} 
+                            onClick={handleSave}
+                        >
+                            <i className={`fas ${isSaved ? 'fa-check' : 'fa-save'} mr-1`}></i>
+                            {isSaved ? 'Saved' : 'Save Changes'}
+                        </button>
+                        
+                        {showSaveMessage && (
+                            <div style={{
+                                background: '#d1fae5',
+                                color: '#065f46',
+                                padding: '6px 10px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                marginTop: '6px',
+                                textAlign: 'center'
+                            }}>
+                                ✓ Changes saved successfully!
+                            </div>
+                        )}
+
+                        <button className="btn btn-primary" onClick={handlePrint} style={{marginTop: '10px'}}>
+                            <i className="fas fa-print mr-1"></i>
+                            Print
+                        </button>
+                        <button className="btn btn-secondary" onClick={handleDownloadPDF}>
+                            <i className="fas fa-file-pdf mr-1"></i>
+                            Save PDF
+                        </button>
+
+                        {/* Export Options */}
+                        <div className="export-options">
+                            <p className="text-xs font-semibold text-gray-700 mb-2">Export Options</p>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#8b5cf6', color: 'white'}}
+                                onClick={downloadAsImage}
+                            >
+                                <i className="fas fa-image mr-1"></i>
+                                Download as PNG
+                            </button>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#06b6d4', color: 'white'}}
+                                onClick={copyToClipboard}
+                            >
+                                <i className="fas fa-copy mr-1"></i>
+                                Copy to Clipboard
+                            </button>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#10b981', color: 'white'}}
+                                onClick={toggleCleanView}
+                            >
+                                <i className={`fas ${isCleanView ? 'fa-edit' : 'fa-eye'} mr-1`}></i>
+                                {isCleanView ? 'Show Editor' : 'Preview Clean'}
+                            </button>
+                        </div>
+
+                        <button className="btn" style={{background: '#ef4444', color: 'white', marginTop: '10px'}} onClick={handleReset}>
+                            <i className="fas fa-redo mr-1"></i>
+                            Reset
+                        </button>
+                        
+                        <div className="mt-3 p-2 bg-blue-50 rounded text-xs text-gray-600">
+                            <p className="font-semibold mb-1 text-xs">Tips:</p>
+                            <ul className="list-disc pl-3 space-y-0.5 text-xs">
+                                <li>Click text to edit</li>
+                                <li>Hover images to upload</li>
+                            </ul>
+                        </div>
+
+                        {/* Features Section */}
+                        <div className="features-section">
+                            <h4 className="text-xs font-bold text-gray-700 mb-2">Custom Features ({customFeatures.length}/10)</h4>
+                            <div className="feature-icon-grid">
+                                {customFeatures.map((feature, index) => (
+                                    <div key={index} className="feature-icon-item">
+                                        <button 
+                                            className="remove-icon-btn"
+                                            onClick={() => removeCustomFeature(index)}
+                                        >
+                                            <i className="fas fa-times"></i>
+                                        </button>
+                                        <div className="feature-icon-display">
+                                            <i className={`fas ${feature.icon}`}></i>
+                                        </div>
+                                        <div className="feature-icon-label">{feature.label}</div>
+                                    </div>
+                                ))}
+                                {customFeatures.length < 10 && (
+                                    <div className="feature-icon-item add-icon" onClick={openIconSelector}>
+                                        <div className="feature-icon-display">
+                                            <i className="fas fa-plus"></i>
+                                        </div>
+                                        <div className="feature-icon-label">Add Feature</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Icon Selector Modal */}
+                    {showIconSelector && (
+                        <div className="icon-selector-modal" onClick={() => setShowIconSelector(false)}>
+                            <div className="icon-selector-content" onClick={(e) => e.stopPropagation()}>
+                                <h3 className="text-lg font-bold mb-4">Select a Feature</h3>
+                                <div>
+                                    {availableIcons.map((iconData, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="icon-option"
+                                            onClick={() => addCustomFeature(iconData)}
+                                        >
+                                            <i className={`fas ${iconData.icon}`}></i>
+                                            <span>{iconData.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button 
+                                    className="btn btn-primary mt-4"
+                                    onClick={() => setShowIconSelector(false)}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Amenity Icon Selector Modal */}
+                    {showAmenityIconSelector && (
+                        <div className="icon-selector-modal" onClick={() => setShowAmenityIconSelector(false)}>
+                            <div className="icon-selector-content" onClick={(e) => e.stopPropagation()}>
+                                <h3 className="text-lg font-bold mb-4">Change Amenity Icon</h3>
+                                <div>
+                                    {availableIcons.map((iconData, index) => (
+                                        <div 
+                                            key={index} 
+                                            className="icon-option"
+                                            onClick={() => changeAmenityIcon(iconData)}
+                                        >
+                                            <i className={`fas ${iconData.icon}`}></i>
+                                            <span>{iconData.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button 
+                                    className="btn btn-primary mt-4"
+                                    onClick={() => setShowAmenityIconSelector(false)}
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className={`flyer-container ${isCleanView ? 'clean-view' : ''}`}>
+                        {/* Hero Section with Image - New Unified Blue Gradient Design */}
+                        <div style={{position: 'relative', width: '100%', height: '500px', overflow: 'hidden'}}>
+                            {/* Hero Image Background */}
+                            <div 
+                                className="image-upload-btn" 
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    zIndex: 1
+                                }}
+                                onClick={() => triggerFileInput(heroImageRef)}
+                            >
+                                {propertyData.heroImage ? (
+                                    <img src={propertyData.heroImage} alt="Property" style={{width: '100%', height: '100%', objectFit: 'cover'}} />
+                                ) : (
+                                    <div style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white'
+                                    }}>
+                                        <div className="text-center">
+                                            <i className="fas fa-camera text-6xl mb-4 opacity-50"></i>
+                                            <p className="text-xl">Click to Upload Hero Image</p>
+                                            <p className="text-sm opacity-75 mt-2">JPG, PNG, or WebP (max 10MB)</p>
+                                        </div>
+                                    </div>
+                                )}
+                                <input 
+                                    type="file" 
+                                    style={{display: 'none'}}
+                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                    onChange={(e) => handleImageUpload('heroImage', e)}
+                                    ref={heroImageRef}
+                                />
+                                {propertyData.heroImage && (
+                                    <div className="upload-overlay">
+                                        <div className="text-white text-center">
+                                            <i className="fas fa-camera text-4xl mb-2"></i>
+                                            <p>Change Image</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Blue Gradient Overlay Section - Unified with logo, MLS, address, and pricing */}
+                            <div style={{
+                                position: 'absolute',
+                                bottom: 0,
+                                left: 0,
+                                width: '100%',
+                                height: '180px',
+                                background: 'linear-gradient(to top, rgba(30, 58, 138, 0.98) 0%, rgba(30, 58, 138, 0.95) 35%, rgba(30, 58, 138, 0.70) 65%, transparent 100%)',
+                                zIndex: 5
+                            }}>
+                                {/* Logo - Much smaller bubble */}
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '12px',
+                                    left: '0',
+                                    background: 'white',
+                                    padding: '8px 14px',
+                                    borderRadius: '0 20% 20% 0',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '120px',
+                                    height: '54px',
+                                    position: 'relative',
+                                    overflow: 'visible'
+                                }}>
+                                    <img 
+                                        src={propertyData.logo} 
+                                        alt="Company Logo" 
+                                        style={{
+                                            height: `${propertyData.logoHeight}px`, 
+                                            width: `${propertyData.logoWidth}px`, 
+                                            objectFit: 'contain',
+                                            maxWidth: 'none',
+                                            maxHeight: 'none'
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Address and MLS Section - Bottom Left (SWAPPED POSITIONS) */}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '18px',
+                                    left: '30px',
+                                    color: 'white',
+                                    maxWidth: '50%'
+                                }}>
+                                    {/* Address first (was second) */}
+                                    <div
+                                        className="edit-field edit-field-white"
+                                        contentEditable={!isCleanView}
+                                        onBlur={(e) => handleInputChange('address', e.currentTarget.textContent)}
+                                        suppressContentEditableWarning={true}
+                                        style={{fontSize: '32px', fontWeight: 'bold', color: 'white', background: 'transparent', border: 'none', lineHeight: '1.1', marginBottom: '6px', outline: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}
+                                    >
+                                        {propertyData.address}
+                                    </div>
+                                    {/* MLS second (was first) - Label inline */}
+                                    <div style={{display: 'flex', alignItems: 'baseline', gap: '8px'}}>
+                                        <div style={{fontSize: '10px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px'}}>MLS</div>
+                                        <div
+                                            className="edit-field edit-field-white"
+                                            contentEditable={!isCleanView}
+                                            onBlur={(e) => handleInputChange('mls', e.currentTarget.textContent)}
+                                            suppressContentEditableWarning={true}
+                                            style={{fontSize: '16px', fontWeight: '600', color: 'white', background: 'transparent', border: 'none', outline: 'none', display: 'inline-block', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}
+                                        >
+                                            {propertyData.mls}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Pricing Section - Bottom Right */}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: '18px',
+                                    right: '30px',
+                                    color: 'white',
+                                    textAlign: 'right'
+                                }}>
+                                    {/* USD Price - BIGGER - Label inline */}
+                                    <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
+                                        <div style={{fontSize: '28px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>USD</div>
+                                        <div style={{display: 'flex', alignItems: 'center'}}>
+                                            <span style={{fontSize: '28px', fontWeight: 'bold', marginRight: '6px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>$</span>
+                                            <div
+                                                className="edit-field edit-field-white"
+                                                contentEditable={!isCleanView}
+                                                onBlur={(e) => handleInputChange('priceUSD', e.currentTarget.textContent)}
+                                                suppressContentEditableWarning={true}
+                                                style={{fontSize: '28px', fontWeight: 'bold', textAlign: 'right', color: 'white', minWidth: '170px', maxWidth: '250px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
+                                            >
+                                                {propertyData.priceUSD}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* MXN Price - SMALLER - Label inline */}
+                                    <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
+                                        <div style={{fontSize: '9px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>MXN</div>
+                                        <div style={{display: 'flex', alignItems: 'center'}}>
+                                            <span style={{fontSize: '14px', marginRight: '4px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>$</span>
+                                            <div
+                                                className="edit-field edit-field-white"
+                                                contentEditable={!isCleanView}
+                                                onBlur={(e) => handleInputChange('priceMXN', e.currentTarget.textContent)}
+                                                suppressContentEditableWarning={true}
+                                                style={{fontSize: '14px', textAlign: 'right', color: 'white', minWidth: '140px', maxWidth: '200px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
+                                            >
+                                                {propertyData.priceMXN}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Separator Line */}
+                                    <div style={{
+                                        width: '60%',
+                                        height: '1px',
+                                        background: 'rgba(255, 255, 255, 0.3)',
+                                        marginBottom: '8px',
+                                        marginTop: '4px',
+                                        marginLeft: 'auto'
+                                    }}></div>
+
+                                    {/* Size and Year Built */}
+                                    <div style={{display: 'flex', gap: '18px', fontSize: '13px', justifyContent: 'flex-end', alignItems: 'flex-end'}}>
+                                        <div style={{textAlign: 'right'}}>
+                                            <div style={{opacity: 0.8, fontSize: '9px', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Size</div>
+                                            <div style={{display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end'}}>
+                                                <input 
+                                                    type="text" 
+                                                    className="edit-field edit-field-white"
+                                                    style={{fontWeight: '600', fontSize: '13px', width: '60px', textAlign: 'right', color: 'white', background: 'transparent', border: 'none'}}
+                                                    value={propertyData.size}
+                                                    onChange={(e) => handleInputChange('size', e.target.value)}
+                                                />
+                                                <span style={{marginLeft: '4px', fontSize: '10px', opacity: 0.9}}>SQFT</span>
+                                            </div>
+                                        </div>
+                                        <div style={{textAlign: 'right'}}>
+                                            <div style={{opacity: 0.8, fontSize: '9px', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Year Built</div>
+                                            <input 
+                                                type="text" 
+                                                className="edit-field edit-field-white"
+                                                style={{fontWeight: '600', fontSize: '13px', width: '50px', textAlign: 'right', color: 'white', background: 'transparent', border: 'none'}}
+                                                value={propertyData.yearBuilt}
+                                                onChange={(e) => handleInputChange('yearBuilt', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Content Section */}
+                        <div className="content-section">
+                            <div style={{display: 'flex', gap: '16px', width: '100%', maxWidth: '100%'}}>
+                                {/* Left side: 2x2 Grid of Images */}
+                                <div style={{flex: '0 0 66%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                                    {/* Interior Image 1 */}
+                                    <div style={{minWidth: 0}}>
+                                        <div 
+                                            className="image-upload-btn" 
+                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
+                                            onClick={() => triggerFileInput(image1Ref)}
+                                        >
+                                            {propertyData.image1 ? (
+                                                <img src={propertyData.image1} className="interior-image" alt="Interior 1" />
+                                            ) : (
+                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
+                                                    <div className="text-center text-gray-400">
+                                                        <i className="fas fa-camera text-2xl mb-2"></i>
+                                                        <p className="text-xs">Upload Image</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                style={{display: 'none'}}
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                onChange={(e) => handleImageUpload('image1', e)}
+                                                ref={image1Ref}
+                                            />
+                                            {propertyData.image1 && (
+                                                <div className="upload-overlay">
+                                                    <div className="text-white text-center">
+                                                        <i className="fas fa-camera text-xl"></i>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Interior Image 2 */}
+                                    <div style={{minWidth: 0}}>
+                                        <div 
+                                            className="image-upload-btn" 
+                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
+                                            onClick={() => triggerFileInput(image2Ref)}
+                                        >
+                                            {propertyData.image2 ? (
+                                                <img src={propertyData.image2} className="interior-image" alt="Interior 2" />
+                                            ) : (
+                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
+                                                    <div className="text-center text-gray-400">
+                                                        <i className="fas fa-camera text-2xl mb-2"></i>
+                                                        <p className="text-xs">Upload Image</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                style={{display: 'none'}}
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                onChange={(e) => handleImageUpload('image2', e)}
+                                                ref={image2Ref}
+                                            />
+                                            {propertyData.image2 && (
+                                                <div className="upload-overlay">
+                                                    <div className="text-white text-center">
+                                                        <i className="fas fa-camera text-xl"></i>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Interior Image 3 */}
+                                    <div style={{minWidth: 0}}>
+                                        <div 
+                                            className="image-upload-btn" 
+                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
+                                            onClick={() => triggerFileInput(image3Ref)}
+                                        >
+                                            {propertyData.image3 ? (
+                                                <img src={propertyData.image3} className="interior-image" alt="Interior 3" />
+                                            ) : (
+                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
+                                                    <div className="text-center text-gray-400">
+                                                        <i className="fas fa-camera text-2xl mb-2"></i>
+                                                        <p className="text-xs">Upload Image</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                style={{display: 'none'}}
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                onChange={(e) => handleImageUpload('image3', e)}
+                                                ref={image3Ref}
+                                            />
+                                            {propertyData.image3 && (
+                                                <div className="upload-overlay">
+                                                    <div className="text-white text-center">
+                                                        <i className="fas fa-camera text-xl"></i>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Interior Image 4 */}
+                                    <div style={{minWidth: 0}}>
+                                        <div 
+                                            className="image-upload-btn" 
+                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
+                                            onClick={() => triggerFileInput(image4Ref)}
+                                        >
+                                            {propertyData.image4 ? (
+                                                <img src={propertyData.image4} className="interior-image" alt="Interior 4" />
+                                            ) : (
+                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
+                                                    <div className="text-center text-gray-400">
+                                                        <i className="fas fa-camera text-2xl mb-2"></i>
+                                                        <p className="text-xs">Upload Image</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <input 
+                                                type="file" 
+                                                style={{display: 'none'}}
+                                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                onChange={(e) => handleImageUpload('image4', e)}
+                                                ref={image4Ref}
+                                            />
+                                            {propertyData.image4 && (
+                                                <div className="upload-overlay">
+                                                    <div className="text-white text-center">
+                                                        <i className="fas fa-camera text-xl"></i>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right side: Unit Overview */}
+                                <div style={{flex: '0 0 34%', minWidth: 0, overflow: 'hidden'}}>
+                                    <div className="unit-overview-section" style={{height: '382px', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%'}}>
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Unit Overview</h3>
+                                        <div 
+                                            className="edit-field edit-field-dark text-xs leading-relaxed flex-1"
+                                            contentEditable={!isCleanView}
+                                            onBlur={(e) => {
+                                                const text = e.currentTarget.textContent;
+                                                if (text.length <= 350) {
+                                                    handleInputChange('overview', text);
+                                                } else {
+                                                    // Truncate to 350 characters
+                                                    const truncated = text.substring(0, 350);
+                                                    handleInputChange('overview', truncated);
+                                                    e.currentTarget.textContent = truncated;
+                                                }
+                                            }}
+                                            suppressContentEditableWarning={true}
+                                            style={{
+                                                whiteSpace: 'pre-wrap', 
+                                                wordWrap: 'break-word', 
+                                                overflowWrap: 'break-word', 
+                                                width: '100%', 
+                                                maxWidth: '100%', 
+                                                boxSizing: 'border-box', 
+                                                overflow: 'hidden',
+                                                lineHeight: '1.5',
+                                                padding: '8px'
+                                            }}
+                                        >
+                                            {propertyData.overview}
+                                        </div>
+                                        <div className="character-counter" style={{fontSize: '9px', color: '#9ca3af', marginTop: '4px', textAlign: 'right'}}>
+                                            {propertyData.overview.length}/350 characters
+                                        </div>
+                                        <div className="mt-2 text-right">
+                                            <input 
+                                                type="text" 
+                                                className="edit-field edit-field-dark text-xs text-gray-500 text-right"
+                                                value={propertyData.location}
+                                                onChange={(e) => handleInputChange('location', e.target.value)}
+                                                placeholder="Location"
+                                                style={{width: '100%', maxWidth: '100%', boxSizing: 'border-box'}}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Amenities Section */}
+                            <div className="amenities-section">
+                                {amenityIcons.map((amenity, index) => (
+                                    <div key={index} className="amenity-item" style={{position: 'relative'}}>
+                                        <button 
+                                            className="remove-icon-btn"
+                                            onClick={() => openAmenityIconSelector(index)}
+                                            title="Change icon"
+                                        >
+                                            <i className="fas fa-sync-alt" style={{fontSize: '10px'}}></i>
+                                        </button>
+                                        <div className="amenity-icon">
+                                            <i className={`fas ${amenity.icon}`}></i>
+                                        </div>
+                                        <input 
+                                            type="text" 
+                                            className="edit-field edit-field-dark amenity-value text-center"
+                                            style={{width: '40px', margin: '0 auto', fontSize: '22px'}}
+                                            value={amenity.value}
+                                            onChange={(e) => updateAmenityValue(index, e.target.value)}
+                                        />
+                                        <div className="amenity-label">{amenity.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Footer Note */}
+                        <div className="footer-note">
+                            *The property's price will be displayed in the legal currency of the United States of America and also in its equivalent in Mexican Pesos, according to the exchange rate published in the D.O.F. on the day of the sale.
+                        </div>
+                    </div>
+                </>
+            );
+        }
+
+        ReactDOM.render(<PropertyFlyerEditor />, document.getElementById('root'));
+    </script>
+</body>
+</html>
