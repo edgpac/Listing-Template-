@@ -221,6 +221,27 @@
             box-shadow: 0 2px 15px rgba(0,0,0,0.1);
             z-index: 1000;
             width: 200px;
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .controls-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .controls-panel::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .controls-panel::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .controls-panel::-webkit-scrollbar-thumb:hover {
+            background: #555;
         }
 
         .logo-upload-box:hover {
@@ -574,14 +595,12 @@
             const handleImageUpload = (field, event) => {
                 const file = event.target.files[0];
                 if (file) {
-                    // Validate file type
                     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
                     if (!validTypes.includes(file.type)) {
                         alert('Please select a valid image file (JPG, PNG, or WebP)');
                         return;
                     }
                     
-                    // Check file size (max 10MB)
                     const maxSize = 10 * 1024 * 1024;
                     if (file.size > maxSize) {
                         alert('File size too large. Please use images smaller than 10MB.');
@@ -684,12 +703,10 @@
             };
 
             const handleSave = () => {
-                // Force a re-render to ensure all state is current
                 setPropertyData({...propertyData});
                 setIsSaved(true);
                 setShowSaveMessage(true);
                 
-                // Hide the save message after 2 seconds
                 setTimeout(() => {
                     setShowSaveMessage(false);
                 }, 2000);
@@ -700,19 +717,15 @@
             };
 
             const downloadAsImage = async () => {
-                // Enable clean view temporarily
                 setIsCleanView(true);
                 
-                // Wait for DOM to update and render
                 setTimeout(async () => {
                     try {
                         const flyer = document.querySelector('.flyer-container');
-                        
-                        // Force a reflow to ensure all styles are applied
                         flyer.offsetHeight;
                         
                         const canvas = await html2canvas(flyer, {
-                            scale: 2,
+                            scale: 3,
                             useCORS: true,
                             allowTaint: true,
                             backgroundColor: '#ffffff',
@@ -722,31 +735,197 @@
                             scrollX: 0,
                             scrollY: 0,
                             onclone: (clonedDoc) => {
-                                // In the cloned document, convert all inputs to divs with text content
                                 const clonedFlyer = clonedDoc.querySelector('.flyer-container');
+                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
+                                clonedFlyer.style.mozOsxFontSmoothing = 'grayscale';
+                                
                                 const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
                                 inputs.forEach(input => {
-                                    const div = clonedDoc.createElement('div');
-                                    div.textContent = input.value;
-                                    div.style.cssText = window.getComputedStyle(input).cssText;
-                                    div.style.border = 'none';
-                                    div.style.background = 'transparent';
-                                    div.style.whiteSpace = 'pre-wrap';
-                                    div.style.wordWrap = 'break-word';
-                                    input.parentNode.replaceChild(div, input);
+                                    const span = clonedDoc.createElement('span');
+                                    span.textContent = input.value;
+                                    span.style.cssText = window.getComputedStyle(input).cssText;
+                                    span.style.border = 'none';
+                                    span.style.background = 'transparent';
+                                    span.style.whiteSpace = 'pre-wrap';
+                                    span.style.wordWrap = 'break-word';
+                                    span.style.display = 'inline-block';
+                                    input.parentNode.replaceChild(span, input);
+                                });
+                                
+                                const editables = clonedFlyer.querySelectorAll('[contenteditable]');
+                                editables.forEach(editable => {
+                                    editable.removeAttribute('contenteditable');
                                 });
                             }
                         });
                         
                         const link = document.createElement('a');
                         link.download = 'property-flyer.png';
-                        link.href = canvas.toDataURL('image/png');
+                        link.href = canvas.toDataURL('image/png', 1.0);
                         link.click();
                         
                         setIsCleanView(false);
                     } catch (error) {
                         console.error('Export failed:', error);
                         alert('Export failed. Please try Print to PDF instead.');
+                        setIsCleanView(false);
+                    }
+                }, 100);
+            };
+
+            const downloadMultiFormat = async (format) => {
+                // ULTRA-HIGH scale factors to combat 96 DPI base resolution
+                const formats = {
+                    instagram: { 
+                        width: 1080, 
+                        height: 1080, 
+                        scale: 6,  // 816px × 6 = 4896px capture width
+                        name: 'instagram-post',
+                        captureHeight: null
+                    },
+                    facebook: {
+                        width: 1200,
+                        height: 630,
+                        scale: 8,  // 816px × 8 = 6528px capture - ULTRA sharp for logo
+                        name: 'facebook-post',
+                        captureHeight: 850
+                    },
+                    print: { 
+                        width: 2550, 
+                        height: 3300, 
+                        scale: 4,  // 816px × 4 = 3264px (close to 2550px target)
+                        name: 'print-flyer',
+                        captureHeight: null
+                    }
+                };
+
+                const spec = formats[format];
+                if (!spec) return;
+
+                setIsCleanView(true);
+                
+                setTimeout(async () => {
+                    try {
+                        const flyer = document.querySelector('.flyer-container');
+                        const flyerRect = flyer.getBoundingClientRect();
+                        
+                        // Determine capture dimensions
+                        const captureWidth = flyerRect.width;
+                        const captureHeight = spec.captureHeight || flyerRect.height;
+                        
+                        console.log(`Capturing at ${captureWidth * spec.scale}×${captureHeight * spec.scale}px (${spec.scale}x scale)`);
+                        
+                        // Capture with ULTRA-HIGH quality
+                        const canvas = await html2canvas(flyer, {
+                            scale: spec.scale,
+                            useCORS: true,
+                            allowTaint: true,
+                            backgroundColor: '#ffffff',
+                            logging: false,
+                            width: captureWidth,
+                            height: captureHeight,
+                            x: 0,
+                            y: 0,
+                            // Force high-quality rendering
+                            imageTimeout: 0,
+                            removeContainer: true,
+                            onclone: (clonedDoc) => {
+                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
+                                
+                                // CRITICAL: Best font rendering to combat compression
+                                clonedFlyer.style.fontSmooth = 'always';
+                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
+                                clonedFlyer.style.mozOsxFontSmoothing = 'grayscale';
+                                clonedFlyer.style.textRendering = 'optimizeLegibility';
+                                clonedFlyer.style.imageRendering = 'high-quality';
+                                
+                                // Convert ALL text inputs to crisp spans
+                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
+                                inputs.forEach(input => {
+                                    const span = clonedDoc.createElement('span');
+                                    span.textContent = input.value;
+                                    span.style.cssText = window.getComputedStyle(input).cssText;
+                                    span.style.border = 'none';
+                                    span.style.background = 'transparent';
+                                    span.style.whiteSpace = 'pre-wrap';
+                                    span.style.display = 'inline-block';
+                                    span.style.webkitFontSmoothing = 'antialiased';
+                                    span.style.textRendering = 'optimizeLegibility';
+                                    input.parentNode.replaceChild(span, input);
+                                });
+                                
+                                const editables = clonedFlyer.querySelectorAll('[contenteditable]');
+                                editables.forEach(editable => {
+                                    editable.removeAttribute('contenteditable');
+                                    editable.style.webkitFontSmoothing = 'antialiased';
+                                    editable.style.textRendering = 'optimizeLegibility';
+                                });
+                            }
+                        });
+
+                        console.log(`Captured canvas: ${canvas.width}×${canvas.height}px`);
+
+                        // Create final canvas at exact target size
+                        const finalCanvas = document.createElement('canvas');
+                        finalCanvas.width = spec.width;
+                        finalCanvas.height = spec.height;
+                        const ctx = finalCanvas.getContext('2d', { 
+                            alpha: false,
+                            desynchronized: false,
+                            willReadFrequently: false
+                        });
+                        
+                        // MAXIMUM quality settings
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(0, 0, spec.width, spec.height);
+
+                        // Fitting strategy based on format
+                        let drawWidth, drawHeight, offsetX, offsetY;
+                        
+                        if (format === 'facebook') {
+                            // Cover mode - fill entire Facebook canvas
+                            const sourceAspect = canvas.width / canvas.height;
+                            const targetAspect = spec.width / spec.height;
+                            
+                            if (sourceAspect > targetAspect) {
+                                drawHeight = spec.height;
+                                drawWidth = drawHeight * sourceAspect;
+                                offsetX = -(drawWidth - spec.width) / 2;
+                                offsetY = 0;
+                            } else {
+                                drawWidth = spec.width;
+                                drawHeight = drawWidth / sourceAspect;
+                                offsetX = 0;
+                                offsetY = 0;
+                            }
+                        } else {
+                            // Contain mode - fit entire content
+                            const fitScale = Math.min(
+                                spec.width / canvas.width,
+                                spec.height / canvas.height
+                            );
+                            drawWidth = canvas.width * fitScale;
+                            drawHeight = canvas.height * fitScale;
+                            offsetX = (spec.width - drawWidth) / 2;
+                            offsetY = (spec.height - drawHeight) / 2;
+                        }
+
+                        ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
+
+                        console.log(`Final export: ${spec.width}×${spec.height}px`);
+
+                        // Export with ZERO compression
+                        const link = document.createElement('a');
+                        link.download = `${spec.name}-${Date.now()}.png`;
+                        link.href = finalCanvas.toDataURL('image/png', 1.0);
+                        link.click();
+                        
+                        setIsCleanView(false);
+                    } catch (error) {
+                        console.error('Multi-format export failed:', error);
+                        alert('Export failed. Please try again.');
                         setIsCleanView(false);
                     }
                 }, 300);
@@ -759,9 +938,23 @@
                     try {
                         const flyer = document.querySelector('.flyer-container');
                         const canvas = await html2canvas(flyer, {
-                            scale: 2,
+                            scale: 3,
                             useCORS: true,
-                            backgroundColor: '#ffffff'
+                            backgroundColor: '#ffffff',
+                            onclone: (clonedDoc) => {
+                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
+                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
+                                
+                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
+                                inputs.forEach(input => {
+                                    const span = clonedDoc.createElement('span');
+                                    span.textContent = input.value;
+                                    span.style.cssText = window.getComputedStyle(input).cssText;
+                                    span.style.border = 'none';
+                                    span.style.background = 'transparent';
+                                    input.parentNode.replaceChild(span, input);
+                                });
+                            }
                         });
                         
                         canvas.toBlob(async (blob) => {
@@ -910,7 +1103,7 @@
 
                         {/* Export Options */}
                         <div className="export-options">
-                            <p className="text-xs font-semibold text-gray-700 mb-2">Export Options</p>
+                            <p className="text-xs font-semibold text-gray-700 mb-2">Quick Export</p>
                             <button 
                                 className="btn export-btn" 
                                 style={{background: '#8b5cf6', color: 'white'}}
@@ -937,6 +1130,38 @@
                             </button>
                         </div>
 
+                        {/* Multi-Format Export */}
+                        <div className="export-options" style={{marginTop: '15px', borderTop: '1px solid #e5e7eb', paddingTop: '15px'}}>
+                            <p className="text-xs font-semibold text-gray-700 mb-2">
+                                <i className="fas fa-magic mr-1"></i>
+                                Multi-Format Export
+                            </p>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#E4405F', color: 'white', fontSize: '11px'}}
+                                onClick={() => downloadMultiFormat('instagram')}
+                            >
+                                <i className="fab fa-instagram mr-1"></i>
+                                Instagram (1080×1080)
+                            </button>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#1877F2', color: 'white', fontSize: '11px'}}
+                                onClick={() => downloadMultiFormat('facebook')}
+                            >
+                                <i className="fab fa-facebook mr-1"></i>
+                                Facebook (1200×630)
+                            </button>
+                            <button 
+                                className="btn export-btn" 
+                                style={{background: '#7c3aed', color: 'white', fontSize: '11px'}}
+                                onClick={() => downloadMultiFormat('print')}
+                            >
+                                <i className="fas fa-print mr-1"></i>
+                                Print (8.5×11)
+                            </button>
+                        </div>
+
                         <button className="btn" style={{background: '#ef4444', color: 'white', marginTop: '10px'}} onClick={handleReset}>
                             <i className="fas fa-redo mr-1"></i>
                             Reset
@@ -947,6 +1172,7 @@
                             <ul className="list-disc pl-3 space-y-0.5 text-xs">
                                 <li>Click text to edit</li>
                                 <li>Hover images to upload</li>
+                                <li>6x scale = crisp exports!</li>
                             </ul>
                         </div>
 
@@ -1035,9 +1261,8 @@
                     )}
 
                     <div className={`flyer-container ${isCleanView ? 'clean-view' : ''}`}>
-                        {/* Hero Section with Image - New Unified Blue Gradient Design */}
+                        {/* Hero Section with Image */}
                         <div style={{position: 'relative', width: '100%', height: '500px', overflow: 'hidden'}}>
-                            {/* Hero Image Background */}
                             <div 
                                 className="image-upload-btn" 
                                 style={{
@@ -1087,7 +1312,7 @@
                                 )}
                             </div>
 
-                            {/* Blue Gradient Overlay Section - Unified with logo, MLS, address, and pricing */}
+                            {/* Blue Gradient Overlay */}
                             <div style={{
                                 position: 'absolute',
                                 bottom: 0,
@@ -1097,7 +1322,7 @@
                                 background: 'linear-gradient(to top, rgba(30, 58, 138, 0.98) 0%, rgba(30, 58, 138, 0.95) 35%, rgba(30, 58, 138, 0.70) 65%, transparent 100%)',
                                 zIndex: 5
                             }}>
-                                {/* Logo - Much smaller bubble */}
+                                {/* Logo */}
                                 <div style={{
                                     position: 'absolute',
                                     top: '12px',
@@ -1127,7 +1352,7 @@
                                     />
                                 </div>
 
-                                {/* Address and MLS Section - Bottom Left (SWAPPED POSITIONS) */}
+                                {/* Address and MLS */}
                                 <div style={{
                                     position: 'absolute',
                                     bottom: '18px',
@@ -1135,7 +1360,6 @@
                                     color: 'white',
                                     maxWidth: '50%'
                                 }}>
-                                    {/* Address first (was second) */}
                                     <div
                                         className="edit-field edit-field-white"
                                         contentEditable={!isCleanView}
@@ -1145,7 +1369,6 @@
                                     >
                                         {propertyData.address}
                                     </div>
-                                    {/* MLS second (was first) - Label inline */}
                                     <div style={{display: 'flex', alignItems: 'baseline', gap: '8px'}}>
                                         <div style={{fontSize: '10px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px'}}>MLS</div>
                                         <div
@@ -1160,7 +1383,7 @@
                                     </div>
                                 </div>
 
-                                {/* Pricing Section - Bottom Right */}
+                                {/* Pricing */}
                                 <div style={{
                                     position: 'absolute',
                                     bottom: '18px',
@@ -1168,7 +1391,6 @@
                                     color: 'white',
                                     textAlign: 'right'
                                 }}>
-                                    {/* USD Price - BIGGER - Label inline */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
                                         <div style={{fontSize: '28px', opacity: 0.9, textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 'bold', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>USD</div>
                                         <div style={{display: 'flex', alignItems: 'center'}}>
@@ -1185,7 +1407,6 @@
                                         </div>
                                     </div>
                                     
-                                    {/* MXN Price - SMALLER - Label inline */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
                                         <div style={{fontSize: '9px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>MXN</div>
                                         <div style={{display: 'flex', alignItems: 'center'}}>
@@ -1202,7 +1423,6 @@
                                         </div>
                                     </div>
 
-                                    {/* Separator Line */}
                                     <div style={{
                                         width: '60%',
                                         height: '1px',
@@ -1212,7 +1432,6 @@
                                         marginLeft: 'auto'
                                     }}></div>
 
-                                    {/* Size and Year Built */}
                                     <div style={{display: 'flex', gap: '18px', fontSize: '13px', justifyContent: 'flex-end', alignItems: 'flex-end'}}>
                                         <div style={{textAlign: 'right'}}>
                                             <div style={{opacity: 0.8, fontSize: '9px', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Size</div>
@@ -1245,146 +1464,45 @@
                         {/* Content Section */}
                         <div className="content-section">
                             <div style={{display: 'flex', gap: '16px', width: '100%', maxWidth: '100%'}}>
-                                {/* Left side: 2x2 Grid of Images */}
+                                {/* Left: 2x2 Grid */}
                                 <div style={{flex: '0 0 66%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
-                                    {/* Interior Image 1 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image1Ref)}
-                                        >
-                                            {propertyData.image1 ? (
-                                                <img src={propertyData.image1} className="interior-image" alt="Interior 1" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
+                                    {[1, 2, 3, 4].map(num => (
+                                        <div key={num} style={{minWidth: 0}}>
+                                            <div 
+                                                className="image-upload-btn" 
+                                                style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
+                                                onClick={() => triggerFileInput(eval(`image${num}Ref`))}
+                                            >
+                                                {propertyData[`image${num}`] ? (
+                                                    <img src={propertyData[`image${num}`]} className="interior-image" alt={`Interior ${num}`} />
+                                                ) : (
+                                                    <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
+                                                        <div className="text-center text-gray-400">
+                                                            <i className="fas fa-camera text-2xl mb-2"></i>
+                                                            <p className="text-xs">Upload Image</p>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image1', e)}
-                                                ref={image1Ref}
-                                            />
-                                            {propertyData.image1 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
+                                                )}
+                                                <input 
+                                                    type="file" 
+                                                    style={{display: 'none'}}
+                                                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                                                    onChange={(e) => handleImageUpload(`image${num}`, e)}
+                                                    ref={eval(`image${num}Ref`)}
+                                                />
+                                                {propertyData[`image${num}`] && (
+                                                    <div className="upload-overlay">
+                                                        <div className="text-white text-center">
+                                                            <i className="fas fa-camera text-xl"></i>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {/* Interior Image 2 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image2Ref)}
-                                        >
-                                            {propertyData.image2 ? (
-                                                <img src={propertyData.image2} className="interior-image" alt="Interior 2" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image2', e)}
-                                                ref={image2Ref}
-                                            />
-                                            {propertyData.image2 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Interior Image 3 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image3Ref)}
-                                        >
-                                            {propertyData.image3 ? (
-                                                <img src={propertyData.image3} className="interior-image" alt="Interior 3" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image3', e)}
-                                                ref={image3Ref}
-                                            />
-                                            {propertyData.image3 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Interior Image 4 */}
-                                    <div style={{minWidth: 0}}>
-                                        <div 
-                                            className="image-upload-btn" 
-                                            style={{height: '185px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer'}}
-                                            onClick={() => triggerFileInput(image4Ref)}
-                                        >
-                                            {propertyData.image4 ? (
-                                                <img src={propertyData.image4} className="interior-image" alt="Interior 4" />
-                                            ) : (
-                                                <div className="interior-image" style={{display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6', height: '185px'}}>
-                                                    <div className="text-center text-gray-400">
-                                                        <i className="fas fa-camera text-2xl mb-2"></i>
-                                                        <p className="text-xs">Upload Image</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                            <input 
-                                                type="file" 
-                                                style={{display: 'none'}}
-                                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                                onChange={(e) => handleImageUpload('image4', e)}
-                                                ref={image4Ref}
-                                            />
-                                            {propertyData.image4 && (
-                                                <div className="upload-overlay">
-                                                    <div className="text-white text-center">
-                                                        <i className="fas fa-camera text-xl"></i>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    ))}
                                 </div>
 
-                                {/* Right side: Unit Overview */}
+                                {/* Right: Overview */}
                                 <div style={{flex: '0 0 34%', minWidth: 0, overflow: 'hidden'}}>
                                     <div className="unit-overview-section" style={{height: '382px', display: 'flex', flexDirection: 'column', width: '100%', maxWidth: '100%'}}>
                                         <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">Unit Overview</h3>
@@ -1396,7 +1514,6 @@
                                                 if (text.length <= 350) {
                                                     handleInputChange('overview', text);
                                                 } else {
-                                                    // Truncate to 350 characters
                                                     const truncated = text.substring(0, 350);
                                                     handleInputChange('overview', truncated);
                                                     e.currentTarget.textContent = truncated;
@@ -1434,7 +1551,7 @@
                                 </div>
                             </div>
 
-                            {/* Amenities Section */}
+                            {/* Amenities */}
                             <div className="amenities-section">
                                 {amenityIcons.map((amenity, index) => (
                                     <div key={index} className="amenity-item" style={{position: 'relative'}}>
@@ -1461,7 +1578,7 @@
                             </div>
                         </div>
 
-                        {/* Footer Note */}
+                        {/* Footer */}
                         <div className="footer-note">
                             *The property's price will be displayed in the legal currency of the United States of America and also in its equivalent in Mexican Pesos, according to the exchange rate published in the D.O.F. on the day of the sale.
                         </div>
