@@ -674,12 +674,124 @@
             background: #3b82f6;
             transition: width 0.3s;
         }
+
+        /* Color Customization Styles */
+        .color-preset-grid {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding-bottom: 8px;
+            scroll-behavior: smooth;
+        }
+
+        .color-preset-grid::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .color-preset-grid::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .color-preset-grid::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .color-preset-grid::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .color-preset-btn {
+            padding: 8px;
+            border-radius: 6px;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: white;
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+
+        .color-preset-btn:hover {
+            border-color: #3b82f6;
+            transform: scale(1.05);
+        }
+
+        .color-preset-btn.active {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+
+        .color-preview-box {
+            width: 100%;
+            height: 30px;
+            border-radius: 4px;
+        }
+
+        .color-preset-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
+
+        .color-input-group {
+            margin-bottom: 10px;
+        }
+
+        .color-input-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .color-picker-input {
+            width: 50px;
+            height: 35px;
+            border: 2px solid #e5e7eb;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .color-hex-input {
+            flex: 1;
+            padding: 6px 8px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
     <div id="root"></div>
 
     <script type="text/babel">
+        // AGGRESSIVE CACHE CLEARING - Clear ALL old autosave versions
+        const oldKeys = ['flyer-autosave', 'flyer-autosave-v2'];
+        oldKeys.forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                console.log(`Cleared old cache: ${key}`);
+            }
+        });
+        
         const { useState, useRef, useEffect, useCallback } = React;
 
         // Auto-save hook
@@ -695,7 +807,7 @@
                 setSaveStatus('saving');
                 timeoutRef.current = setTimeout(() => {
                     try {
-                        localStorage.setItem('flyer-autosave', JSON.stringify({
+                        localStorage.setItem('flyer-autosave-v3', JSON.stringify({
                             data,
                             timestamp: Date.now()
                         }));
@@ -776,27 +888,38 @@
                 garageSpaces: '2',
                 swimmingPools: '1',
                 heroImage: null,
-                logo: 'https://res.cloudinary.com/dhwnr1pa5/image/upload/v1762021536/Screenshot_2025-10-31_at_5.21.25_PM-removebg-preview_2_gndt9y.png',
-                logoHeight: 38,
-                logoWidth: 110,
+                logo: 'https://res.cloudinary.com/dhwnr1pa5/image/upload/v1764006077/a-minimalist-logo-design-featuring-the-t_9cojZE3oRBuMZlMFIjIOXg_qBjTM8MbRgWWLNQ2svGVzA-removebg-preview_vha7wz.png',
+                logoHeight: 80,
+                logoWidth: 80,
                 image1: null,
                 image2: null,
                 image3: null,
                 image4: null,
                 qrCodeUrl: '',
-                qrCodeLabel: 'Scan Listing'
+                qrCodeLabel: 'Scan Listing',
+                colorScheme: {
+                    primary: '#1e3a8a',
+                    secondary: '#3b82f6',
+                    gradientStart: '#3b82f6',
+                    gradientEnd: '#1e40af'
+                }
             };
 
             // Try to load autosaved data
             const loadAutoSave = () => {
                 try {
-                    const saved = localStorage.getItem('flyer-autosave');
+                    const saved = localStorage.getItem('flyer-autosave-v3');
                     if (saved) {
                         const { data, timestamp } = JSON.parse(saved);
                         const age = Date.now() - timestamp;
                         // Load if less than 24 hours old
                         if (age < 24 * 60 * 60 * 1000) {
-                            return data;
+                            // Merge with initialData to ensure all new fields exist
+                            return {
+                                ...initialData,
+                                ...data,
+                                colorScheme: data.colorScheme || initialData.colorScheme
+                            };
                         }
                     }
                 } catch (error) {
@@ -806,6 +929,21 @@
             };
 
             const { state: propertyData, setState: setPropertyData, undo, redo, canUndo, canRedo } = useHistory(loadAutoSave());
+            
+            // Initialize colorScheme if missing
+            useEffect(() => {
+                if (!propertyData.colorScheme) {
+                    setPropertyData({
+                        ...propertyData,
+                        colorScheme: {
+                            primary: '#1e3a8a',
+                            secondary: '#3b82f6',
+                            gradientStart: '#3b82f6',
+                            gradientEnd: '#1e40af'
+                        }
+                    });
+                }
+            }, []);
             
             const [customFeatures, setCustomFeatures] = useState([]);
             const [showIconSelector, setShowIconSelector] = useState(false);
@@ -826,7 +964,8 @@
                 export: true,
                 features: false,
                 qr: false,
-                presets: false
+                presets: false,
+                colors: true
             });
             const [showShortcuts, setShowShortcuts] = useState(false);
             const [presets, setPresets] = useState([]);
@@ -835,37 +974,93 @@
 
             const saveStatus = useAutoSave(propertyData);
 
+            // Color Presets
+            const colorPresets = [
+                { name: 'Blue', primary: '#1e3a8a', secondary: '#3b82f6', gradientStart: '#3b82f6', gradientEnd: '#1e40af' },
+                { name: 'Red', primary: '#991b1b', secondary: '#dc2626', gradientStart: '#ef4444', gradientEnd: '#dc2626' },
+                { name: 'Green', primary: '#065f46', secondary: '#059669', gradientStart: '#10b981', gradientEnd: '#059669' },
+                { name: 'Orange', primary: '#9a3412', secondary: '#ea580c', gradientStart: '#f97316', gradientEnd: '#ea580c' },
+                { name: 'Teal', primary: '#115e59', secondary: '#0f766e', gradientStart: '#14b8a6', gradientEnd: '#0f766e' },
+                { name: 'Yellow', primary: '#a16207', secondary: '#ca8a04', gradientStart: '#fbbf24', gradientEnd: '#f59e0b' },
+                { name: 'Black', primary: '#0f172a', secondary: '#1e293b', gradientStart: '#334155', gradientEnd: '#1e293b' },
+                { name: 'Pink', primary: '#be123c', secondary: '#e11d48', gradientStart: '#f43f5e', gradientEnd: '#e11d48' }
+            ];
+
+            const applyColorPreset = (preset) => {
+                setPropertyData({
+                    ...propertyData,
+                    colorScheme: {
+                        primary: preset.primary,
+                        secondary: preset.secondary,
+                        gradientStart: preset.gradientStart,
+                        gradientEnd: preset.gradientEnd
+                    }
+                });
+            };
+
+            const updateColor = (colorType, value) => {
+                setPropertyData({
+                    ...propertyData,
+                    colorScheme: {
+                        ...propertyData.colorScheme,
+                        [colorType]: value
+                    }
+                });
+            };
+
             const availableIcons = [
+                // Basic Amenities
                 { icon: 'fa-wifi', label: 'WiFi' },
                 { icon: 'fa-snowflake', label: 'A/C' },
                 { icon: 'fa-fire', label: 'Heating' },
-                { icon: 'fa-utensils', label: 'Kitchen' },
                 { icon: 'fa-tv', label: 'TV' },
-                { icon: 'fa-dumbbell', label: 'Gym' },
-                { icon: 'fa-hot-tub', label: 'Hot Tub' },
-                { icon: 'fa-umbrella-beach', label: 'Beach Access' },
-                { icon: 'fa-door-open', label: 'Balcony' },
-                { icon: 'fa-paw', label: 'Pet Friendly' },
+                { icon: 'fa-couch', label: 'Furnished' },
                 { icon: 'fa-wheelchair', label: 'Accessible' },
-                { icon: 'fa-shield-alt', label: 'Security' },
-                { icon: 'fa-elevator', label: 'Elevator' },
-                { icon: 'fa-wine-glass', label: 'Bar' },
+                { icon: 'fa-paw', label: 'Pet Friendly' },
+                
+                // Kitchen & Dining
+                { icon: 'fa-utensils', label: 'Kitchen' },
                 { icon: 'fa-coffee', label: 'Coffee Maker' },
                 { icon: 'fa-blender', label: 'Blender' },
-                { icon: 'fa-couch', label: 'Furnished' },
+                { icon: 'fa-wine-glass', label: 'Wine Bar' },
+                
+                // Property Features
+                { icon: 'fa-door-open', label: 'Balcony' },
+                { icon: 'fa-elevator', label: 'Elevator' },
+                { icon: 'fa-home', label: 'Property' },
+                { icon: 'fa-key', label: 'Keys' },
+                { icon: 'fa-tree', label: 'Garden' },
                 { icon: 'fa-sun', label: 'Solar' },
+                
+                // Water & Pool Amenities
+                { icon: 'fa-swimming-pool', label: 'Pool' },
+                { icon: 'fa-child', label: 'Kids Pool' },
+                { icon: 'fa-hot-tub', label: 'Hot Tub' },
+                { icon: 'fa-cocktail', label: 'Swim-up Bar' },
+                { icon: 'fa-umbrella-beach', label: 'Beach Access' },
                 { icon: 'fa-water', label: 'Ocean View' },
+                { icon: 'fa-ship', label: 'Beach Club' },
+                
+                // Sports & Recreation
+                { icon: 'fa-dumbbell', label: 'Gym' },
+                { icon: 'fa-volleyball-ball', label: 'Pickleball' },
+                { icon: 'fa-table-tennis', label: 'Tennis Court' },
+                { icon: 'fa-spa', label: 'Spa' },
+                { icon: 'fa-chess-board', label: 'Game Room' },
+                
+                // Security & Services
+                { icon: 'fa-shield-alt', label: 'Security' },
+                { icon: 'fa-user-shield', label: 'Guard' },
+                { icon: 'fa-lock', label: 'Secure' },
+                
+                // Views
                 { icon: 'fa-mountain', label: 'Mountain View' },
+                
+                // Room Types (for amenities bar)
                 { icon: 'fa-bed', label: 'Bedrooms' },
                 { icon: 'fa-bath', label: 'Full Baths' },
                 { icon: 'fa-toilet', label: 'Half Bath' },
-                { icon: 'fa-car', label: 'Garage' },
-                { icon: 'fa-swimming-pool', label: 'Pool' },
-                { icon: 'fa-tree', label: 'Garden' },
-                { icon: 'fa-home', label: 'Property' },
-                { icon: 'fa-key', label: 'Keys' },
-                { icon: 'fa-lock', label: 'Secure' },
-                { icon: 'fa-chess-board', label: 'Game Room' }
+                { icon: 'fa-car', label: 'Garage' }
             ];
 
             const heroImageRef = useRef(null);
@@ -939,7 +1134,7 @@
                                 text: propertyData.qrCodeUrl,
                                 width: 120,
                                 height: 120,
-                                colorDark: '#1e3a8a',
+                                colorDark: propertyData.colorScheme.primary,
                                 colorLight: '#ffffff',
                                 correctLevel: QRCode.CorrectLevel.H
                             });
@@ -957,7 +1152,7 @@
                                 text: propertyData.qrCodeUrl,
                                 width: 60,
                                 height: 60,
-                                colorDark: '#1e3a8a',
+                                colorDark: propertyData.colorScheme.primary,
                                 colorLight: '#ffffff',
                                 correctLevel: QRCode.CorrectLevel.H
                             });
@@ -966,7 +1161,7 @@
                         }
                     }
                 }
-            }, [propertyData.qrCodeUrl]);
+            }, [propertyData.qrCodeUrl, propertyData.colorScheme.primary]);
 
             const handleInputChange = (field, value) => {
                 setPropertyData({
@@ -1398,6 +1593,25 @@
                 }, 100);
             };
 
+            // Safety check: don't render until colorScheme exists
+            if (!propertyData.colorScheme) {
+                return (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        height: '100vh',
+                        fontFamily: 'Montserrat, sans-serif',
+                        color: '#6b7280'
+                    }}>
+                        <div style={{textAlign: 'center'}}>
+                            <i className="fas fa-spinner fa-spin" style={{fontSize: '48px', marginBottom: '16px'}}></i>
+                            <p>Loading editor...</p>
+                        </div>
+                    </div>
+                );
+            }
+
             return (
                 <>
                     {/* Auto-save indicator */}
@@ -1725,6 +1939,119 @@
                             )}
                         </div>
 
+                        {/* Color Customization Section */}
+                        <div className="collapsible-section">
+                            <div className="collapsible-header" onClick={() => toggleSection('colors')}>
+                                <div className="collapsible-header-title">
+                                    <i className="fas fa-palette"></i>
+                                    <span>Color Scheme</span>
+                                </div>
+                                <i className={`fas fa-chevron-down collapsible-header-icon ${expandedSections.colors ? 'open' : ''}`}></i>
+                            </div>
+                            {expandedSections.colors && (
+                                <div className="collapsible-content">
+                                    <p className="text-xs font-semibold text-gray-700 mb-2">Preset Colors</p>
+                                    <div className="color-preset-grid">
+                                        {colorPresets.map((preset, index) => (
+                                            <div
+                                                key={index}
+                                                className="color-preset-btn"
+                                                onClick={() => applyColorPreset(preset)}
+                                            >
+                                                <div 
+                                                    className="color-preview-box"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${preset.gradientStart} 0%, ${preset.gradientEnd} 100%)`
+                                                    }}
+                                                ></div>
+                                                <span className="color-preset-label">{preset.name}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div style={{marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #e5e7eb'}}>
+                                        <p className="text-xs font-semibold text-gray-700 mb-3">Custom Colors</p>
+                                        
+                                        <div className="color-input-group">
+                                            <label className="color-input-label">Primary (Footer/Icons)</label>
+                                            <div className="color-input-wrapper">
+                                                <input
+                                                    type="color"
+                                                    className="color-picker-input"
+                                                    value={propertyData.colorScheme.primary}
+                                                    onChange={(e) => updateColor('primary', e.target.value)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="color-hex-input"
+                                                    value={propertyData.colorScheme.primary}
+                                                    onChange={(e) => updateColor('primary', e.target.value)}
+                                                    placeholder="#1e3a8a"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="color-input-group">
+                                            <label className="color-input-label">Secondary (Accents)</label>
+                                            <div className="color-input-wrapper">
+                                                <input
+                                                    type="color"
+                                                    className="color-picker-input"
+                                                    value={propertyData.colorScheme.secondary}
+                                                    onChange={(e) => updateColor('secondary', e.target.value)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="color-hex-input"
+                                                    value={propertyData.colorScheme.secondary}
+                                                    onChange={(e) => updateColor('secondary', e.target.value)}
+                                                    placeholder="#3b82f6"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="color-input-group">
+                                            <label className="color-input-label">Gradient Start</label>
+                                            <div className="color-input-wrapper">
+                                                <input
+                                                    type="color"
+                                                    className="color-picker-input"
+                                                    value={propertyData.colorScheme.gradientStart}
+                                                    onChange={(e) => updateColor('gradientStart', e.target.value)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="color-hex-input"
+                                                    value={propertyData.colorScheme.gradientStart}
+                                                    onChange={(e) => updateColor('gradientStart', e.target.value)}
+                                                    placeholder="#3b82f6"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="color-input-group">
+                                            <label className="color-input-label">Gradient End</label>
+                                            <div className="color-input-wrapper">
+                                                <input
+                                                    type="color"
+                                                    className="color-picker-input"
+                                                    value={propertyData.colorScheme.gradientEnd}
+                                                    onChange={(e) => updateColor('gradientEnd', e.target.value)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    className="color-hex-input"
+                                                    value={propertyData.colorScheme.gradientEnd}
+                                                    onChange={(e) => updateColor('gradientEnd', e.target.value)}
+                                                    placeholder="#1e40af"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         {/* Presets Section */}
                         <div className="collapsible-section">
                             <div className="collapsible-header" onClick={() => toggleSection('presets')}>
@@ -1910,7 +2237,7 @@
                                     <div style={{
                                         width: '100%',
                                         height: '100%',
-                                        background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
+                                        background: `linear-gradient(135deg, ${propertyData.colorScheme.gradientStart} 0%, ${propertyData.colorScheme.gradientEnd} 100%)`,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
@@ -1940,45 +2267,44 @@
                                 )}
                             </div>
 
-                            {/* Blue Gradient Overlay */}
+                            {/* Dynamic Gradient Overlay */}
                             <div style={{
                                 position: 'absolute',
                                 bottom: 0,
                                 left: 0,
                                 width: '100%',
                                 height: '180px',
-                                background: 'linear-gradient(to top, rgba(30, 58, 138, 0.98) 0%, rgba(30, 58, 138, 0.95) 35%, rgba(30, 58, 138, 0.70) 65%, transparent 100%)',
+                                background: `linear-gradient(to top, ${propertyData.colorScheme.primary}f9 0%, ${propertyData.colorScheme.primary}f2 35%, ${propertyData.colorScheme.primary}b3 65%, transparent 100%)`,
                                 zIndex: 5
                             }}>
-                                {/* Logo */}
-                                <div style={{
-                                    position: 'absolute',
-                                    top: '12px',
-                                    left: '0',
-                                    background: 'white',
-                                    padding: '8px 14px',
-                                    borderRadius: '0 20% 20% 0',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '120px',
-                                    height: '54px',
-                                    position: 'relative',
-                                    overflow: 'visible'
-                                }}>
-                                    <img 
-                                        src={propertyData.logo} 
-                                        alt="Company Logo" 
-                                        style={{
-                                            height: `${propertyData.logoHeight}px`, 
-                                            width: `${propertyData.logoWidth}px`, 
-                                            objectFit: 'contain',
-                                            maxWidth: 'none',
-                                            maxHeight: 'none'
-                                        }}
-                                    />
-                                </div>
+                                {/* Logo - Only show bubble when logo exists */}
+                                {propertyData.logo && (
+                                    <div style={{
+                                        position: 'absolute',
+                                        top: '12px',
+                                        left: '0',
+                                        background: 'white',
+                                        padding: '2px 6px',
+                                        borderRadius: '0 0 8px 0',
+                                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        zIndex: 10
+                                    }}>
+                                        <img 
+                                            src={propertyData.logo} 
+                                            alt="Company Logo" 
+                                            style={{
+                                                height: `${propertyData.logoHeight}px`, 
+                                                width: `${propertyData.logoWidth}px`, 
+                                                objectFit: 'contain',
+                                                maxWidth: 'none',
+                                                maxHeight: 'none'
+                                            }}
+                                        />
+                                    </div>
+                                )}
 
                                 {/* Address and MLS */}
                                 <div style={{
@@ -2193,13 +2519,13 @@
                                         >
                                             <i className="fas fa-sync-alt" style={{fontSize: '10px'}}></i>
                                         </button>
-                                        <div className="amenity-icon">
+                                        <div className="amenity-icon" style={{color: propertyData.colorScheme.primary}}>
                                             <i className={`fas ${amenity.icon}`}></i>
                                         </div>
                                         <input 
                                             type="text" 
                                             className="edit-field edit-field-dark amenity-value text-center"
-                                            style={{width: '40px', margin: '0 auto', fontSize: '22px'}}
+                                            style={{width: '40px', margin: '0 auto', fontSize: '22px', color: propertyData.colorScheme.primary}}
                                             value={amenity.value}
                                             onChange={(e) => updateAmenityValue(index, e.target.value)}
                                         />
@@ -2230,7 +2556,7 @@
                         </div>
 
                         {/* Footer */}
-                        <div className="footer-note">
+                        <div className="footer-note" style={{background: propertyData.colorScheme.primary}}>
                             *The property's price will be displayed in the legal currency of the United States of America and also in its equivalent in Mexican Pesos, according to the exchange rate published in the D.O.F. on the day of the sale.
                         </div>
                     </div>
