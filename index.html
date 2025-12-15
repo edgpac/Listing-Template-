@@ -839,7 +839,69 @@
         });
         
         const { useState, useRef, useEffect, useCallback } = React;
+const { useState, useRef, useEffect, useCallback } = React;
 
+// ========== DEMO WATERMARK ==========
+const DemoWatermark = () => (
+    <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.02)',
+        pointerEvents: 'none',
+        zIndex: 9999
+    }}>
+        <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-45deg)',
+            fontSize: '80px',
+            color: 'rgba(0,0,0,0.08)',
+            fontWeight: 'bold',
+            whiteSpace: 'nowrap',
+            letterSpacing: '10px'
+        }}>
+            DEMO VERSION
+        </div>
+    </div>
+);
+
+// ========== BUY NOW BANNER ==========
+const BuyNowBanner = () => (
+    <div 
+        style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+            padding: '12px 24px',
+            borderRadius: '30px',
+            boxShadow: '0 4px 20px rgba(16, 185, 129, 0.4)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'transform 0.2s'
+        }}
+        onClick={() => window.open('https://gumroad.com/l/YOUR_PRODUCT_CODE', '_blank')}
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(-50%) scale(1.05)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(-50%) scale(1)'}
+    >
+        <i className="fas fa-lock" style={{color: 'white', fontSize: '18px'}}></i>
+        <span style={{color: 'white', fontWeight: 'bold', fontSize: '14px'}}>
+            🎉 Unlock Full Version - Only $19
+        </span>
+        <i className="fas fa-arrow-right" style={{color: 'white', fontSize: '16px'}}></i>
+    </div>
+);
+
+// Auto-save hook
+function useAutoSave(data, delay = 2000) {
         // Auto-save hook
         function useAutoSave(data, delay = 2000) {
             const [saveStatus, setSaveStatus] = useState('saved');
@@ -1340,11 +1402,11 @@
             };
 
             const handlePrint = () => {
-                window.print();
+            alert('🖨️ PRINT FEATURE LOCKED\n\nUnlock in full version: https://gumroad.com/l/YOUR_PRODUCT_CODE');
             };
 
             const handleDownloadPDF = () => {
-                window.print();
+            alert('📄 PDF EXPORT LOCKED\n\nGet full version: https://gumroad.com/l/YOUR_PRODUCT_CODE');
             };
 
             const handleReset = () => {
@@ -1393,201 +1455,12 @@
                 }
             };
             const downloadAsImage = async () => {
-                setIsCleanView(true);
-                
-                setTimeout(async () => {
-                    try {
-                        const flyer = document.querySelector('.flyer-container');
-                        flyer.offsetHeight;
-                        
-                        const canvas = await html2canvas(flyer, {
-                            scale: 3,
-                            useCORS: true,
-                            allowTaint: true,
-                            backgroundColor: '#ffffff',
-                            logging: false,
-                            windowWidth: flyer.scrollWidth,
-                            windowHeight: flyer.scrollHeight,
-                            scrollX: 0,
-                            scrollY: 0,
-                            onclone: (clonedDoc) => {
-                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
-                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
-                                clonedFlyer.style.mozOsxFontSmoothing = 'grayscale';
-                                
-                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
-                                inputs.forEach(input => {
-                                    const span = clonedDoc.createElement('span');
-                                    span.textContent = input.value;
-                                    span.style.cssText = window.getComputedStyle(input).cssText;
-                                    span.style.border = 'none';
-                                    span.style.background = 'transparent';
-                                    span.style.whiteSpace = 'pre-wrap';
-                                    span.style.wordWrap = 'break-word';
-                                    span.style.display = 'inline-block';
-                                    input.parentNode.replaceChild(span, input);
-                                });
-                                
-                                const editables = clonedFlyer.querySelectorAll('[contenteditable]');
-                                editables.forEach(editable => {
-                                    editable.removeAttribute('contenteditable');
-                                });
-                            }
-                        });
-                        
-                        const link = document.createElement('a');
-                        link.download = `property-flyer-${Date.now()}.png`;
-                        link.href = canvas.toDataURL('image/png', 1.0);
-                        link.click();
-                        
-                        setIsCleanView(false);
-                    } catch (error) {
-                        console.error('Export failed:', error);
-                        alert('Export failed. Please try Print to PDF instead.');
-                        setIsCleanView(false);
-                    }
-                }, 100);
-            };
+    alert('📥 EXPORT FEATURE LOCKED\n\n✨ Get the full version for only $19!\n\n🎁 Includes:\n• All export formats (PNG, PDF, Print)\n• No watermarks\n• Unlimited usage\n• Lifetime updates\n\n👉 Buy now: https://gumroad.com/l/YOUR_PRODUCT_CODE');
+};
 
             const downloadMultiFormat = async (format) => {
-                const formats = {
-                    instagram: { 
-                        width: 1080, 
-                        height: 1080, 
-                        scale: 6,
-                        name: 'instagram-post',
-                        captureHeight: null
-                    },
-                    facebook: {
-                        width: 1200,
-                        height: 630,
-                        scale: 8,
-                        name: 'facebook-post',
-                        captureHeight: 850
-                    },
-                    print: { 
-                        width: 2550, 
-                        height: 3300, 
-                        scale: 4,
-                        name: 'print-flyer',
-                        captureHeight: null
-                    }
-                };
-
-                const spec = formats[format];
-                if (!spec) return;
-
-                setIsCleanView(true);
-                
-                setTimeout(async () => {
-                    try {
-                        const flyer = document.querySelector('.flyer-container');
-                        const flyerRect = flyer.getBoundingClientRect();
-                        
-                        const captureWidth = flyerRect.width;
-                        const captureHeight = spec.captureHeight || flyerRect.height;
-                        
-                        const canvas = await html2canvas(flyer, {
-                            scale: spec.scale,
-                            useCORS: true,
-                            allowTaint: true,
-                            backgroundColor: '#ffffff',
-                            logging: false,
-                            width: captureWidth,
-                            height: captureHeight,
-                            x: 0,
-                            y: 0,
-                            imageTimeout: 0,
-                            removeContainer: true,
-                            onclone: (clonedDoc) => {
-                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
-                                
-                                clonedFlyer.style.fontSmooth = 'always';
-                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
-                                clonedFlyer.style.mozOsxFontSmoothing = 'grayscale';
-                                clonedFlyer.style.textRendering = 'optimizeLegibility';
-                                clonedFlyer.style.imageRendering = 'high-quality';
-                                
-                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
-                                inputs.forEach(input => {
-                                    const span = clonedDoc.createElement('span');
-                                    span.textContent = input.value;
-                                    span.style.cssText = window.getComputedStyle(input).cssText;
-                                    span.style.border = 'none';
-                                    span.style.background = 'transparent';
-                                    span.style.whiteSpace = 'pre-wrap';
-                                    span.style.display = 'inline-block';
-                                    span.style.webkitFontSmoothing = 'antialiased';
-                                    span.style.textRendering = 'optimizeLegibility';
-                                    input.parentNode.replaceChild(span, input);
-                                });
-                                
-                                const editables = clonedFlyer.querySelectorAll('[contenteditable]');
-                                editables.forEach(editable => {
-                                    editable.removeAttribute('contenteditable');
-                                    editable.style.webkitFontSmoothing = 'antialiased';
-                                    editable.style.textRendering = 'optimizeLegibility';
-                                });
-                            }
-                        });
-
-                        const finalCanvas = document.createElement('canvas');
-                        finalCanvas.width = spec.width;
-                        finalCanvas.height = spec.height;
-                        const ctx = finalCanvas.getContext('2d', { 
-                            alpha: false,
-                            desynchronized: false,
-                            willReadFrequently: false
-                        });
-                        
-                        ctx.imageSmoothingEnabled = true;
-                        ctx.imageSmoothingQuality = 'high';
-                        ctx.fillStyle = '#ffffff';
-                        ctx.fillRect(0, 0, spec.width, spec.height);
-
-                        let drawWidth, drawHeight, offsetX, offsetY;
-                        
-                        if (format === 'facebook') {
-                            const sourceAspect = canvas.width / canvas.height;
-                            const targetAspect = spec.width / spec.height;
-                            
-                            if (sourceAspect > targetAspect) {
-                                drawHeight = spec.height;
-                                drawWidth = drawHeight * sourceAspect;
-                                offsetX = -(drawWidth - spec.width) / 2;
-                                offsetY = 0;
-                            } else {
-                                drawWidth = spec.width;
-                                drawHeight = drawWidth / sourceAspect;
-                                offsetX = 0;
-                                offsetY = 0;
-                            }
-                        } else {
-                            const fitScale = Math.min(
-                                spec.width / canvas.width,
-                                spec.height / canvas.height
-                            );
-                            drawWidth = canvas.width * fitScale;
-                            drawHeight = canvas.height * fitScale;
-                            offsetX = (spec.width - drawWidth) / 2;
-                            offsetY = (spec.height - drawHeight) / 2;
-                        }
-
-                        ctx.drawImage(canvas, offsetX, offsetY, drawWidth, drawHeight);
-
-                        const link = document.createElement('a');
-                        link.download = `${spec.name}-${Date.now()}.png`;
-                        link.href = finalCanvas.toDataURL('image/png', 1.0);
-                        link.click();
-                        
-                        setIsCleanView(false);
-                    } catch (error) {
-                        console.error('Multi-format export failed:', error);
-                        alert('Export failed. Please try again.');
-                        setIsCleanView(false);
-                    }
-                }, 300);
-            };
+    alert('📥 EXPORT FEATURE LOCKED\n\nUnlock all export formats in the full version!\n\n👉 https://gumroad.com/l/YOUR_PRODUCT_CODE');
+};
 
             const batchExport = async () => {
                 setBatchExporting(true);
@@ -1606,49 +1479,8 @@
             };
 
             const copyToClipboard = async () => {
-                setIsCleanView(true);
-                
-                setTimeout(async () => {
-                    try {
-                        const flyer = document.querySelector('.flyer-container');
-                        const canvas = await html2canvas(flyer, {
-                            scale: 3,
-                            useCORS: true,
-                            backgroundColor: '#ffffff',
-                            onclone: (clonedDoc) => {
-                                const clonedFlyer = clonedDoc.querySelector('.flyer-container');
-                                clonedFlyer.style.webkitFontSmoothing = 'antialiased';
-                                
-                                const inputs = clonedFlyer.querySelectorAll('input[type="text"], textarea');
-                                inputs.forEach(input => {
-                                    const span = clonedDoc.createElement('span');
-                                    span.textContent = input.value;
-                                    span.style.cssText = window.getComputedStyle(input).cssText;
-                                    span.style.border = 'none';
-                                    span.style.background = 'transparent';
-                                    input.parentNode.replaceChild(span, input);
-                                });
-                            }
-                        });
-                        
-                        canvas.toBlob(async (blob) => {
-                            try {
-                                await navigator.clipboard.write([
-                                    new ClipboardItem({ 'image/png': blob })
-                                ]);
-                                alert('Flyer copied to clipboard!');
-                            } catch (err) {
-                                alert('Copy to clipboard not supported. Please use Download options.');
-                            }
-                            setIsCleanView(false);
-                        });
-                    } catch (error) {
-                        console.error('Copy failed:', error);
-                        alert('Copy failed. Please try another export method.');
-                        setIsCleanView(false);
-                    }
-                }, 100);
-            };
+    alert('📋 CLIPBOARD EXPORT LOCKED\n\nGet full version: https://gumroad.com/l/YOUR_PRODUCT_CODE');
+};
 
             // Safety check: don't render until colorScheme exists
             if (!propertyData.colorScheme) {
@@ -1670,9 +1502,13 @@
             }
 
             return (
-                <>
-                    {/* Auto-save indicator */}
-                    <div className={`autosave-indicator ${saveStatus}`}>
+    <>
+        {/* DEMO WATERMARK & BUY BUTTON */}
+               <DemoWatermark />
+                <BuyNowBanner />
+        
+                   {/* Auto-save indicator */}
+                      <div className={`autosave-indicator ${saveStatus}`}>
                         {saveStatus === 'saving' && (
                             <>
                                 <i className="fas fa-spinner fa-spin"></i>
