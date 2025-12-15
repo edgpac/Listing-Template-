@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIR Property Flyer Editor - Enhanced</title>
+    <title>Property Flyer Editor - Currency Calculator</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -91,6 +91,15 @@
             text-transform: uppercase;
             letter-spacing: 0.2px;
             color: #6b7280;
+            margin-top: 2px;
+        }
+
+        .amenity-name {
+            font-size: 8px;
+            color: #9ca3af;
+            margin-top: 4px;
+            text-transform: none;
+            letter-spacing: 0;
         }
 
         .footer-note {
@@ -160,7 +169,6 @@
             opacity: 1;
         }
 
-        /* Drag and Drop Styles */
         .drag-over {
             border: 3px dashed #3b82f6 !important;
             background: rgba(59, 130, 246, 0.1) !important;
@@ -239,6 +247,36 @@
             cursor: not-allowed;
         }
 
+        /* Currency Dropdown Styles - NEW */
+        .currency-dropdown {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            color: white;
+            padding: 3px 6px;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: pointer;
+            outline: none;
+            font-family: 'Montserrat', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .currency-dropdown option {
+            background: #1e3a8a;
+            color: white;
+            font-size: 11px;
+        }
+        
+        .converted-price-display {
+            font-size: 14px;
+            text-align: right;
+            color: white;
+            min-width: 120px;
+            font-family: system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+        }
+
         @media print {
             .controls-panel {
                 display: none;
@@ -255,6 +293,13 @@
             }
             .upload-overlay {
                 display: none !important;
+            }
+            .currency-dropdown {
+                -webkit-appearance: none;
+                -moz-appearance: none;
+                appearance: none;
+                background: transparent !important;
+                border: none !important;
             }
         }
 
@@ -280,6 +325,15 @@
 
         .clean-view .character-counter {
             display: none !important;
+        }
+
+        .clean-view .currency-dropdown {
+            pointer-events: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background: transparent !important;
+            border: none !important;
         }
 
         .unit-overview-section {
@@ -442,7 +496,6 @@
             color: #3b82f6;
         }
 
-        /* Collapsible Section Styles */
         .collapsible-section {
             margin-bottom: 12px;
             border: 1px solid #e5e7eb;
@@ -489,7 +542,6 @@
             background: white;
         }
 
-        /* Auto-save indicator */
         .autosave-indicator {
             position: fixed;
             top: 20px;
@@ -522,7 +574,6 @@
             color: #991b1b;
         }
 
-        /* QR Code Section */
         .qr-code-container {
             display: flex;
             flex-direction: column;
@@ -556,7 +607,6 @@
             width: auto !important;
         }
 
-        /* Keyboard shortcuts help */
         .shortcuts-modal {
             position: fixed;
             top: 0;
@@ -595,7 +645,6 @@
             font-weight: 600;
         }
 
-        /* Template preset styles */
         .preset-item {
             background: #f9fafb;
             padding: 8px;
@@ -629,7 +678,6 @@
             background: #e5e7eb;
         }
 
-        /* History controls */
         .history-controls {
             display: flex;
             gap: 6px;
@@ -646,7 +694,6 @@
             gap: 4px;
         }
 
-        /* Batch export progress */
         .batch-export-progress {
             position: fixed;
             top: 50%;
@@ -675,7 +722,6 @@
             transition: width 0.3s;
         }
 
-        /* Color Customization Styles */
         .color-preset-grid {
             display: flex;
             gap: 8px;
@@ -796,7 +842,7 @@
 
         // Auto-save hook
         function useAutoSave(data, delay = 2000) {
-            const [saveStatus, setSaveStatus] = useState('saved'); // 'saved', 'saving', 'error'
+            const [saveStatus, setSaveStatus] = useState('saved');
             const timeoutRef = useRef(null);
 
             useEffect(() => {
@@ -837,7 +883,6 @@
                 setHistory(prev => {
                     const newHistory = prev.slice(0, index + 1);
                     newHistory.push(newState);
-                    // Limit history to 50 states
                     if (newHistory.length > 50) {
                         newHistory.shift();
                         return newHistory;
@@ -873,11 +918,25 @@
         }
 
         function PropertyFlyerEditor() {
+            // ========== CURRENCY EXCHANGE RATES - NEW ==========
+            const exchangeRates = {
+                'USD': { rate: 1, symbol: '$', name: 'US Dollar' },
+                'MXN': { rate: 20.0, symbol: '$', name: 'Mexican Peso' },
+                'CAD': { rate: 1.35, symbol: '$', name: 'Canadian Dollar' },
+                'EUR': { rate: 0.92, symbol: '€', name: 'Euro' },
+                'GBP': { rate: 0.79, symbol: '£', name: 'British Pound' },
+                'JPY': { rate: 149.50, symbol: '¥', name: 'Japanese Yen' },
+                'AUD': { rate: 1.52, symbol: '$', name: 'Australian Dollar' },
+                'CHF': { rate: 0.88, symbol: 'Fr', name: 'Swiss Franc' },
+                'CNY': { rate: 7.24, symbol: '¥', name: 'Chinese Yuan' }
+            };
+
+            // ========== INITIAL DATA - MODIFIED ==========
             const initialData = {
                 mls: '24-2325',
                 address: '605B, BAHIA DEL TEZAL',
                 priceUSD: '289,000',
-                priceMXN: '5,780,000',
+                selectedCurrency: 'MXN',  // CHANGED from priceMXN
                 size: '986.69',
                 yearBuilt: '2017',
                 overview: 'This unit completely updated with new kitchen and updated furniture. Great ocean views from the patio.',
@@ -912,13 +971,12 @@
                     if (saved) {
                         const { data, timestamp } = JSON.parse(saved);
                         const age = Date.now() - timestamp;
-                        // Load if less than 24 hours old
                         if (age < 24 * 60 * 60 * 1000) {
-                            // Merge with initialData to ensure all new fields exist
                             return {
                                 ...initialData,
                                 ...data,
-                                colorScheme: data.colorScheme || initialData.colorScheme
+                                colorScheme: data.colorScheme || initialData.colorScheme,
+                                selectedCurrency: data.selectedCurrency || data.priceMXN ? 'MXN' : 'MXN'
                             };
                         }
                     }
@@ -958,7 +1016,6 @@
             const [editingAmenityIndex, setEditingAmenityIndex] = useState(null);
             const [isCleanView, setIsCleanView] = useState(false);
             
-            // UI State
             const [expandedSections, setExpandedSections] = useState({
                 logo: true,
                 export: true,
@@ -1008,8 +1065,30 @@
                 });
             };
 
+            // ========== CURRENCY CALCULATION FUNCTION - NEW ==========
+            const calculateConvertedPrice = () => {
+                if (!propertyData.priceUSD || !propertyData.selectedCurrency) return '';
+                
+                try {
+                    const usdAmount = parseFloat(propertyData.priceUSD.replace(/,/g, ''));
+                    if (isNaN(usdAmount)) return '';
+                    
+                    const rate = exchangeRates[propertyData.selectedCurrency].rate;
+                    const converted = usdAmount * rate;
+                    
+                    return converted.toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    });
+                } catch (error) {
+                    return '';
+                }
+            };
+
+            const convertedPrice = calculateConvertedPrice();
+            const currencyInfo = exchangeRates[propertyData.selectedCurrency || 'MXN'];
+
             const availableIcons = [
-                // Basic Amenities
                 { icon: 'fa-wifi', label: 'WiFi' },
                 { icon: 'fa-snowflake', label: 'A/C' },
                 { icon: 'fa-fire', label: 'Heating' },
@@ -1017,22 +1096,16 @@
                 { icon: 'fa-couch', label: 'Furnished' },
                 { icon: 'fa-wheelchair', label: 'Accessible' },
                 { icon: 'fa-paw', label: 'Pet Friendly' },
-                
-                // Kitchen & Dining
                 { icon: 'fa-utensils', label: 'Kitchen' },
                 { icon: 'fa-coffee', label: 'Coffee Maker' },
                 { icon: 'fa-blender', label: 'Blender' },
                 { icon: 'fa-wine-glass', label: 'Wine Bar' },
-                
-                // Property Features
                 { icon: 'fa-door-open', label: 'Balcony' },
                 { icon: 'fa-elevator', label: 'Elevator' },
                 { icon: 'fa-home', label: 'Property' },
                 { icon: 'fa-key', label: 'Keys' },
                 { icon: 'fa-tree', label: 'Garden' },
                 { icon: 'fa-sun', label: 'Solar' },
-                
-                // Water & Pool Amenities
                 { icon: 'fa-swimming-pool', label: 'Pool' },
                 { icon: 'fa-child', label: 'Kids Pool' },
                 { icon: 'fa-hot-tub', label: 'Hot Tub' },
@@ -1040,23 +1113,15 @@
                 { icon: 'fa-umbrella-beach', label: 'Beach Access' },
                 { icon: 'fa-water', label: 'Ocean View' },
                 { icon: 'fa-ship', label: 'Beach Club' },
-                
-                // Sports & Recreation
                 { icon: 'fa-dumbbell', label: 'Gym' },
                 { icon: 'fa-volleyball-ball', label: 'Pickleball' },
                 { icon: 'fa-table-tennis', label: 'Tennis Court' },
                 { icon: 'fa-spa', label: 'Spa' },
                 { icon: 'fa-chess-board', label: 'Game Room' },
-                
-                // Security & Services
                 { icon: 'fa-shield-alt', label: 'Security' },
                 { icon: 'fa-user-shield', label: 'Guard' },
                 { icon: 'fa-lock', label: 'Secure' },
-                
-                // Views
                 { icon: 'fa-mountain', label: 'Mountain View' },
-                
-                // Room Types (for amenities bar)
                 { icon: 'fa-bed', label: 'Bedrooms' },
                 { icon: 'fa-bath', label: 'Full Baths' },
                 { icon: 'fa-toilet', label: 'Half Bath' },
@@ -1070,7 +1135,6 @@
             const image3Ref = useRef(null);
             const image4Ref = useRef(null);
 
-            // Load presets from localStorage
             useEffect(() => {
                 try {
                     const saved = localStorage.getItem('flyer-presets');
@@ -1081,7 +1145,6 @@
                     console.error('Failed to load presets:', error);
                 }
             }, []);
-
             // Keyboard shortcuts
             useEffect(() => {
                 const handleKeyDown = (e) => {
@@ -1104,7 +1167,6 @@
                     // Save: Ctrl/Cmd + S
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
-                        // Already auto-saving, just show feedback
                         alert('Auto-save is active! Your work is saved automatically.');
                     }
                     // Toggle clean view: Ctrl/Cmd + E
@@ -1125,7 +1187,6 @@
             // Generate QR Code
             useEffect(() => {
                 if (propertyData.qrCodeUrl && propertyData.qrCodeUrl.trim()) {
-                    // QR Code for control panel
                     const qrContainer = document.getElementById('qr-code');
                     if (qrContainer) {
                         qrContainer.innerHTML = '';
@@ -1143,7 +1204,6 @@
                         }
                     }
                     
-                    // QR Code for flyer (smaller, next to amenities)
                     const qrFlyerContainer = document.getElementById('qr-code-flyer');
                     if (qrFlyerContainer) {
                         qrFlyerContainer.innerHTML = '';
@@ -1199,7 +1259,6 @@
                 }
             };
 
-            // Drag and drop handlers
             const handleDragOver = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -1305,7 +1364,6 @@
                 }));
             };
 
-            // Preset management
             const savePreset = () => {
                 const name = prompt('Enter a name for this preset:');
                 if (name && name.trim()) {
@@ -1334,7 +1392,6 @@
                     localStorage.setItem('flyer-presets', JSON.stringify(newPresets));
                 }
             };
-
             const downloadAsImage = async () => {
                 setIsCleanView(true);
                 
@@ -1684,7 +1741,6 @@
                             </div>
                         </div>
                     )}
-
                     <div className="controls-panel">
                         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
                             <h3 className="text-sm font-bold text-gray-800">Enhanced Controls</h3>
@@ -2133,7 +2189,6 @@
                             </ul>
                         </div>
                     </div>
-
                     {/* Icon Selector Modal */}
                     {showIconSelector && (
                         <div className="icon-selector-modal" onClick={() => setShowIconSelector(false)}>
@@ -2313,7 +2368,7 @@
                                     </div>
                                 </div>
 
-                                {/* Pricing */}
+                                {/* Pricing - MODIFIED WITH CURRENCY DROPDOWN */}
                                 <div style={{
                                     position: 'absolute',
                                     bottom: '18px',
@@ -2337,18 +2392,32 @@
                                         </div>
                                     </div>
                                     
+                                    {/* CURRENCY DROPDOWN WITH AUTO-CALCULATED PRICE - NEW */}
                                     <div style={{marginBottom: '8px', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '10px'}}>
-                                        <div style={{fontSize: '9px', opacity: 0.85, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>MXN</div>
+                                        {/* Currency Dropdown */}
+                                        <select 
+                                            className="currency-dropdown"
+                                            value={propertyData.selectedCurrency}
+                                            onChange={(e) => handleInputChange('selectedCurrency', e.target.value)}
+                                            disabled={isCleanView}
+                                        >
+                                            <option value="MXN">MXN</option>
+                                            <option value="CAD">CAD</option>
+                                            <option value="EUR">EUR</option>
+                                            <option value="GBP">GBP</option>
+                                            <option value="JPY">JPY</option>
+                                            <option value="AUD">AUD</option>
+                                            <option value="CHF">CHF</option>
+                                            <option value="CNY">CNY</option>
+                                        </select>
+                                        
+                                        {/* Auto-calculated converted price */}
                                         <div style={{display: 'flex', alignItems: 'center'}}>
-                                            <span style={{fontSize: '14px', marginRight: '4px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>$</span>
-                                            <div
-                                                className="edit-field edit-field-white"
-                                                contentEditable={!isCleanView}
-                                                onBlur={(e) => handleInputChange('priceMXN', e.currentTarget.textContent)}
-                                                suppressContentEditableWarning={true}
-                                                style={{fontSize: '14px', textAlign: 'right', color: 'white', minWidth: '140px', maxWidth: '200px', background: 'transparent', border: 'none', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif', outline: 'none', display: 'inline-block'}}
-                                            >
-                                                {propertyData.priceMXN}
+                                            <span style={{fontSize: '14px', marginRight: '4px', fontFamily: 'system-ui, -apple-system, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif'}}>
+                                                {currencyInfo.symbol}
+                                            </span>
+                                            <div className="converted-price-display">
+                                                {convertedPrice}
                                             </div>
                                         </div>
                                     </div>
@@ -2484,7 +2553,7 @@
                                 </div>
                             </div>
 
-                            {/* Amenities */}
+                            {/* Amenities - MODIFIED WITH NAME LABELS */}
                             <div className="amenities-section">
                                 {amenityIcons.map((amenity, index) => (
                                     <div key={index} className="amenity-item" style={{position: 'relative'}}>
@@ -2505,7 +2574,10 @@
                                             value={amenity.value}
                                             onChange={(e) => updateAmenityValue(index, e.target.value)}
                                         />
-                                        <div className="amenity-label">{amenity.label}</div>
+                                        {/* AMENITY NAME LABEL - NEW */}
+                                        <div className="amenity-name">
+                                            {amenity.label}
+                                        </div>
                                     </div>
                                 ))}
                                 
@@ -2531,9 +2603,9 @@
                             </div>
                         </div>
 
-                        {/* Footer */}
+                        {/* Footer - UPDATED TEXT */}
                         <div className="footer-note" style={{background: propertyData.colorScheme.primary}}>
-                            *The property's price will be displayed in the legal currency of the United States of America and also in its equivalent in Mexican Pesos, according to the exchange rate published in the D.O.F. on the day of the sale.
+                            *Property prices are displayed in USD and can be converted to your preferred currency. Exchange rates are approximate and subject to change.
                         </div>
                     </div>
                 </>
